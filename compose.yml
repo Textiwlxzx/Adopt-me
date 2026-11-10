@@ -1,0 +1,156 @@
+services:
+  frontend:
+    profiles: ["prod", "frontend"]
+    image: adoptme-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - adoptme-network
+
+  frontend-dev:
+    profiles: ["dev", "dev-frontend"]
+    image: adoptme-frontend:dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend/my-app:/app
+      - /app/node_modules
+      - /app/.expo
+    environment:
+      - BROWSER=none
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - FAST_REFRESH=true
+    ports:
+      - "8081:8081"
+    networks:
+      - adoptme-network
+    stdin_open: true
+    tty: true
+
+  backend:
+    profiles: ["prod", "backend"]
+    image: adoptme-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      PASSWORD_ENDEC_SALT: ${PASSWORD_ENDEC_SALT}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - adoptme-network
+
+  backend-test:
+    profiles: ["test", "test-backend"]
+    image: adoptme-backend:test
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      OAUTH_REDIRECT_URI: 'http://backend-test:3000/api/oauth/google/callback'
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      PASSWORD_ENDEC_SALT: ${PASSWORD_ENDEC_SALT}
+      NODE_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - adoptme-network
+
+  backend-dev:
+    profiles: ["dev", "dev-backend"]
+    image: adoptme-backend:dev
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      OAUTH_REDIRECT_URI: 'http://backend-dev:3000/api/oauth/google/callback'
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DB_HOST: db-dev
+      DB_PORT: 5432
+      DB_NAME: dev
+      DB_USER: dev
+      DB_PASSWORD: aa1234
+      JWT_SECRET: secret123
+      JWT_EXPIRATION: 1h
+      PASSWORD_ENDEC_SALT: saltSALT
+    volumes:
+      - ./backend/src:/app/src
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db-dev
+    networks:
+      - adoptme-network
+
+  db:
+    image: postgres:18-alpine
+    profiles: ["prod", "test", "backend"]
+    volumes:
+      - adoptme_db:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - adoptme-network
+
+  db-dev:
+    image: postgres:18-alpine
+    profiles: ["dev", "dev-backend"]
+    volumes:
+      - adoptme_dev_db:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: dev
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: aa1234
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - adoptme-network
+
+volumes:
+  adoptme_db:
+  adoptme_dev_db:
+
+networks:
+  adoptme-network:
+    driver: bridge
