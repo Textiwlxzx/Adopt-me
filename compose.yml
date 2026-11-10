@@ -1,0 +1,172 @@
+services:
+  frontend:
+    profiles: ["prod", "frontend"]
+    restart: unless-stopped
+    image: adoptme-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - adoptme-network
+
+  frontend-dev:
+    profiles: ["dev", "dev-frontend"]
+    restart: on-failure
+    image: adoptme-frontend:dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - FAST_REFRESH=true
+    ports:
+      - "3000:3000"
+    networks:
+      - adoptme-network
+    stdin_open: true
+    tty: true
+
+  backend:
+    profiles: ["prod", "backend"]
+    image: adoptme-backend:latest
+    restart: unless-stopped
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      PASSWORD_ENDEC_SALT: ${PASSWORD_ENDEC_SALT}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_PHONE: ${ADMIN_PHONE}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - adoptme-network
+
+  backend-test:
+    profiles: ["test", "test-backend"]
+    image: adoptme-backend:test
+    restart: on-failure
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      OAUTH_REDIRECT_URI: 'http://backend-test:3000/api/oauth/google/callback'
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      PASSWORD_ENDEC_SALT: ${PASSWORD_ENDEC_SALT}
+      NODE_ENV: test
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - adoptme-network
+
+  backend-dev:
+    profiles: ["dev", "dev-backend"]
+    image: adoptme-backend:dev
+    restart: unless-stopped
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      OAUTH_REDIRECT_URI: 'http://backend-dev:3000/api/oauth/google/callback'
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      DB_HOST: db-dev
+      DB_PORT: 5432
+      DB_NAME: dev
+      DB_USER: dev
+      DB_PASSWORD: aa1234
+      JWT_SECRET: secret123
+      JWT_EXPIRATION: 1h
+      PASSWORD_ENDEC_SALT: saltSALT
+      ADMIN_USERNAME: admin
+      ADMIN_EMAIL: admin@test.com
+      ADMIN_PASSWORD: admin1234
+      ADMIN_PHONE: 0888888888
+    volumes:
+      - ./backend/src:/app/src
+    ports:
+      - "5000:3000"
+    depends_on:
+      - db-dev
+    networks:
+      - adoptme-network
+
+  db:
+    image: postgres:18-alpine
+    profiles: ["prod", "test", "backend"]
+    restart: unless-stopped
+    volumes:
+      - adoptme_db:/var/lib/postgresql
+      - ./init-scripts/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    networks:
+      - adoptme-network
+
+  db-dev:
+    image: postgres:18-alpine
+    profiles: ["dev", "dev-backend"]
+    restart: on-failure
+    volumes:
+      - adoptme_dev_db:/var/lib/postgresql
+      - ./init-scripts/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    environment:
+      POSTGRES_DB: dev
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: aa1234
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - adoptme-network
+
+volumes:
+  adoptme_db:
+  adoptme_dev_db:
+
+networks:
+  adoptme-network:
+    driver: bridge
