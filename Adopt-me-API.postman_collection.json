@@ -1,0 +1,148 @@
+{
+  "info": {
+    "_postman_id": "adopt-me-api-collection",
+    "name": "Adopt-Me API (v1)",
+    "description": "Collection for testing Adopt-Me Backend API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "1. Register (สมัครสมาชิกใหม่)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password1234\",\n  \"username\": \"testuser\",\n  \"name\": \"ทดสอบ ผู้ใช้งาน\",\n  \"phone\": \"0812345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "2. Login (เข้าสู่ระบบ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Animals",
+      "item": [
+        {
+          "name": "3. Register New Animal (ลงทะเบียนสัตว์ใหม่)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"น้องส้ม\",\n  \"species\": \"cat\",\n  \"breed\": \"ไทยสลิด\",\n  \"gender\": \"male\",\n  \"age\": \"2 เดือน\",\n  \"color\": \"ส้มลายแถบ\",\n  \"status\": \"found\",\n  \"location\": \"สวนลุมพินี ประตู 3\",\n  \"description\": \"เจอลูกแมวร้องอยู่ใต้พุ่มไม้ ปลอดภัยแล้ว\",\n  \"image_url\": \"https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba\",\n  \"contact_name\": \"สมศรี\",\n  \"contact_phone\": \"0899999999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals"]
+            }
+          }
+        },
+        {
+          "name": "4. Get All Animals (ดึงรายการสัตว์ทั้งหมด)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals"]
+            }
+          }
+        },
+        {
+          "name": "5. Get All Animals (Filter by Species/Search)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals?species=cat&search=ส้ม",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals"],
+              "query": [
+                {
+                  "key": "species",
+                  "value": "cat"
+                },
+                {
+                  "key": "search",
+                  "value": "ส้ม"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. Get Animal By ID (ดูรายละเอียดรายตัว)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/animals/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "animals", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "3000:3000"
     networks:
       - adoptme-network
 
@@ -17,18 +17,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend/my-app:/app
+      - ./frontend:/app
       - /app/node_modules
-      - /app/.expo
+      - /app/.next
     environment:
-      - BROWSER=none
-      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      - NODE_ENV=development
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000
       - FAST_REFRESH=true
     ports:
-      - "8081:8081"
+      - "3000:3000"
     networks:
       - adoptme-network
     stdin_open: true
@@ -41,6 +40,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
+      PORT: 5000
       OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -52,6 +52,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       PASSWORD_ENDEC_SALT: ${PASSWORD_ENDEC_SALT}
+    ports:
+      - "5000:5000"
     depends_on:
       db:
         condition: service_healthy
@@ -66,7 +68,8 @@ services:
       dockerfile: Dockerfile
       target: test
     environment:
-      OAUTH_REDIRECT_URI: 'http://backend-test:3000/api/oauth/google/callback'
+      PORT: 5000
+      OAUTH_REDIRECT_URI: 'http://backend-test:5000/api/oauth/google/callback'
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       DB_HOST: db
@@ -91,7 +94,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     environment:
-      OAUTH_REDIRECT_URI: 'http://backend-dev:3000/api/oauth/google/callback'
+      PORT: 5000
+      OAUTH_REDIRECT_URI: 'http://backend-dev:5000/api/oauth/google/callback'
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       DB_HOST: db-dev
@@ -105,7 +109,7 @@ services:
     volumes:
       - ./backend/src:/app/src
     ports:
-      - "3000:3000"
+      - "5000:5000"
     depends_on:
       - db-dev
     networks:
