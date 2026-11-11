@@ -120,6 +120,7 @@ services:
     profiles: ["prod", "test", "backend"]
     volumes:
       - adoptme_db:/var/lib/postgresql
+      - ./init-scripts/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -137,6 +138,7 @@ services:
     profiles: ["dev", "dev-backend"]
     volumes:
       - adoptme_dev_db:/var/lib/postgresql
+      - ./init-scripts/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     environment:
       POSTGRES_DB: dev
       POSTGRES_USER: dev

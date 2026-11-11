@@ -40,7 +40,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password1234\",\n  \"username\": \"testuser\",\n  \"name\": \"ทดสอบ ผู้ใช้งาน\",\n  \"phone\": \"0812345678\"\n}"
+              "raw": "{\n  \"name\": \"สมชาย ใจดี\",\n  \"email\": \"somchai@example.com\",\n  \"password\": \"password1234\",\n  \"phone\": \"0812345678\",\n  \"role\": \"adopter\",\n  \"address\": \"123/45 ถนนสุขุมวิท กรุงเทพมหานคร\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/register",
@@ -61,7 +61,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password1234\"\n}"
+              "raw": "{\n  \"email\": \"somchai@example.com\",\n  \"password\": \"password1234\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/login",
@@ -87,7 +87,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"น้องส้ม\",\n  \"species\": \"cat\",\n  \"breed\": \"ไทยสลิด\",\n  \"gender\": \"male\",\n  \"age\": \"2 เดือน\",\n  \"color\": \"ส้มลายแถบ\",\n  \"status\": \"found\",\n  \"location\": \"สวนลุมพินี ประตู 3\",\n  \"description\": \"เจอลูกแมวร้องอยู่ใต้พุ่มไม้ ปลอดภัยแล้ว\",\n  \"image_url\": \"https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba\",\n  \"contact_name\": \"สมศรี\",\n  \"contact_phone\": \"0899999999\"\n}"
+              "raw": "{\n  \"name\": \"น้องส้ม\",\n  \"species\": \"cat\",\n  \"breed\": \"ไทยสลิด\",\n  \"age\": 2,\n  \"gender\": \"male\",\n  \"health_condition\": \"แข็งแรง ได้รับวัคซีนรวมเข็มแรกแล้ว\",\n  \"personality_note\": \"เชื่อง ชอบให้อุ้ม ขี้เล่น\",\n  \"photo_url\": \"https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba\",\n  \"location_found\": \"สวนลุมพินี ประตู 3\",\n  \"status\": \"street\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/animals",
@@ -109,12 +109,12 @@
           }
         },
         {
-          "name": "5. Get All Animals (Filter by Species/Search)",
+          "name": "5. Get All Animals (Filter by Species & Status)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/animals?species=cat&search=ส้ม",
+              "raw": "{{baseUrl}}/api/v1/animals?species=cat&status=street",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "animals"],
               "query": [
@@ -123,8 +123,8 @@
                   "value": "cat"
                 },
                 {
-                  "key": "search",
-                  "value": "ส้ม"
+                  "key": "status",
+                  "value": "street"
                 }
               ]
             }

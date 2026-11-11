@@ -1,5 +1,9 @@
 const db = require('../config/db');
 
+const VALID_SPECIES = ['dog', 'cat', 'other'];
+const VALID_GENDERS = ['male', 'female'];
+const VALID_STATUSES = ['street', 'fostered', 'adopted'];
+
 // POST /api/v1/animals (แจ้ง/ลงทะเบียนสัตว์ที่พบใหม่ - 201 Created)
 async function createAnimal(req, res, next) {
   try {
@@ -7,53 +11,96 @@ async function createAnimal(req, res, next) {
       name,
       species,
       breed,
-      gender,
       age,
-      color,
-      status,
-      location,
-      description,
+      gender,
+      health_condition,
+      healthCondition,
+      personality_note,
+      personalityNote,
+      photo_url,
+      photoUrl,
       image_url,
       imageUrl,
-      contact_name,
-      contactName,
-      contact_phone,
-      contactPhone,
+      location_found,
+      locationFound,
+      location,
+      status,
+      caretaker_id,
+      caretakerId,
     } = req.body;
 
     // Validate required fields
-    if (!name || !location) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        error: { message: 'Animal name and location are required.' },
+        error: { message: 'Animal name is required.' },
       });
     }
 
-    const animalSpecies = species || 'unknown';
-    const animalStatus = status || 'found';
-    const finalImageUrl = image_url || imageUrl || null;
-    const finalContactName = contact_name || contactName || null;
-    const finalContactPhone = contact_phone || contactPhone || null;
+    // Validate and normalize species ENUM ('dog', 'cat', 'other')
+    const normalizedSpecies = (species || 'other').toLowerCase();
+    if (!VALID_SPECIES.includes(normalizedSpecies)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: `Invalid species. Allowed values: ${VALID_SPECIES.join(', ')}` },
+      });
+    }
+
+    // Validate gender ENUM ('male', 'female', nullable)
+    let normalizedGender = null;
+    if (gender) {
+      const g = gender.toLowerCase();
+      if (!VALID_GENDERS.includes(g)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: `Invalid gender. Allowed values: ${VALID_GENDERS.join(', ')}` },
+        });
+      }
+      normalizedGender = g;
+    }
+
+    // Validate status ENUM ('street', 'fostered', 'adopted')
+    const normalizedStatus = (status || 'street').toLowerCase();
+    if (!VALID_STATUSES.includes(normalizedStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: { message: `Invalid status. Allowed values: ${VALID_STATUSES.join(', ')}` },
+      });
+    }
+
+    // Parse age (INT)
+    let parsedAge = null;
+    if (age !== undefined && age !== null && age !== '') {
+      const num = parseInt(age, 10);
+      if (!isNaN(num)) {
+        parsedAge = num;
+      }
+    }
+
+    const finalPhotoUrl = photo_url || photoUrl || image_url || imageUrl || null;
+    const finalLocationFound = location_found || locationFound || location || null;
+    const finalHealthCondition = health_condition || healthCondition || null;
+    const finalPersonalityNote = personality_note || personalityNote || null;
+    const finalCaretakerId = caretaker_id || caretakerId || null;
 
     const result = await db.query(
       `INSERT INTO animals (
-        name, species, breed, gender, age, color, status,
-        location, description, image_url, contact_name, contact_phone
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        caretaker_id, name, species, breed, age, gender,
+        health_condition, personality_note, photo_url, location_found, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *`,
       [
+        finalCaretakerId,
         name.trim(),
-        animalSpecies.trim(),
+        normalizedSpecies,
         breed ? breed.trim() : null,
-        gender ? gender.trim() : null,
-        age ? age.trim() : null,
-        color ? color.trim() : null,
-        animalStatus.trim(),
-        location.trim(),
-        description ? description.trim() : null,
-        finalImageUrl,
-        finalContactName,
-        finalContactPhone,
+        parsedAge,
+        normalizedGender,
+        finalHealthCondition ? finalHealthCondition.trim() : null,
+        finalPersonalityNote ? finalPersonalityNote.trim() : null,
+        finalPhotoUrl,
+        finalLocationFound ? finalLocationFound.trim() : null,
+        normalizedStatus,
       ]
     );
 
@@ -70,30 +117,42 @@ async function createAnimal(req, res, next) {
 // GET /api/v1/animals (ดึงรายการสัตว์ทั้งหมด - 200 OK)
 async function getAllAnimals(req, res, next) {
   try {
-    const { species, status, search, limit = 50, offset = 0 } = req.query;
+    const { species, status, gender, search, limit = 50, offset = 0 } = req.query;
 
-    let queryText = 'SELECT * FROM animals';
+    let queryText = `
+      SELECT 
+        a.*,
+        u.name as caretaker_name,
+        u.phone as caretaker_phone
+      FROM animals a
+      LEFT JOIN users u ON a.caretaker_id = u.id
+    `;
     const queryParams = [];
     const conditions = [];
 
-    if (species) {
+    if (species && VALID_SPECIES.includes(species.toLowerCase())) {
       queryParams.push(species.toLowerCase());
-      conditions.push(`LOWER(species) = $${queryParams.length}`);
+      conditions.push(`a.species = $${queryParams.length}`);
     }
 
-    if (status) {
+    if (status && VALID_STATUSES.includes(status.toLowerCase())) {
       queryParams.push(status.toLowerCase());
-      conditions.push(`LOWER(status) = $${queryParams.length}`);
+      conditions.push(`a.status = $${queryParams.length}`);
+    }
+
+    if (gender && VALID_GENDERS.includes(gender.toLowerCase())) {
+      queryParams.push(gender.toLowerCase());
+      conditions.push(`a.gender = $${queryParams.length}`);
     }
 
     if (search) {
       queryParams.push(`%${search.toLowerCase()}%`);
       const paramIndex = queryParams.length;
       conditions.push(`(
-        LOWER(name) LIKE $${paramIndex} OR
-        LOWER(breed) LIKE $${paramIndex} OR
-        LOWER(location) LIKE $${paramIndex} OR
-        LOWER(description) LIKE $${paramIndex}
+        LOWER(a.name) LIKE $${paramIndex} OR
+        LOWER(COALESCE(a.breed, '')) LIKE $${paramIndex} OR
+        LOWER(COALESCE(a.location_found, '')) LIKE $${paramIndex} OR
+        LOWER(COALESCE(a.personality_note, '')) LIKE $${paramIndex}
       )`);
     }
 
@@ -101,7 +160,7 @@ async function getAllAnimals(req, res, next) {
       queryText += ' WHERE ' + conditions.join(' AND ');
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    queryText += ' ORDER BY a.created_at DESC';
 
     // Pagination
     queryParams.push(parseInt(limit, 10) || 50);
@@ -134,7 +193,18 @@ async function getAnimalById(req, res, next) {
       });
     }
 
-    const result = await db.query('SELECT * FROM animals WHERE id = $1', [Number(id)]);
+    const queryText = `
+      SELECT 
+        a.*,
+        u.name as caretaker_name,
+        u.email as caretaker_email,
+        u.phone as caretaker_phone
+      FROM animals a
+      LEFT JOIN users u ON a.caretaker_id = u.id
+      WHERE a.id = $1
+    `;
+
+    const result = await db.query(queryText, [Number(id)]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
