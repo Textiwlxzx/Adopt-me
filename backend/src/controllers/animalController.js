@@ -222,8 +222,50 @@ async function getAnimalById(req, res, next) {
   }
 }
 
+// PATCH /api/v1/animals/:id/claim (รับเป็นคนดูแล (claim) สัตว์ตัวนี้ - 200 OK - Caretaker)
+async function claimAnimal(req, res, next) {
+  try {
+    const { id } = req.params;
+    const caretakerId = req.user.id;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Invalid animal ID format.' },
+      });
+    }
+
+    // ตรวจสอบว่ามีสัตว์ตัวนี้ในระบบหรือไม่
+    const existing = await db.query('SELECT * FROM animals WHERE id = $1', [Number(id)]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: `Animal with ID ${id} not found.` },
+      });
+    }
+
+    // อัปเดต caretaker_id และปรับสถานะเป็น 'fostered'
+    const result = await db.query(
+      `UPDATE animals
+       SET caretaker_id = $1, status = 'fostered'
+       WHERE id = $2
+       RETURNING *`,
+      [caretakerId, Number(id)]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Claimed animal successfully',
+      data: result.rows[0],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createAnimal,
   getAllAnimals,
   getAnimalById,
+  claimAnimal,
 };

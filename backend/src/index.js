@@ -4,6 +4,8 @@ const { PORT, NODE_ENV } = require('./config/env');
 const { initDb } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const animalRoutes = require('./routes/animalRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
+const followUpRoutes = require('./routes/followUpRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -56,6 +58,8 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/animals', animalRoutes);
+app.use('/api/v1/adoption-applications', applicationRoutes);
+app.use('/api/v1/follow-ups', followUpRoutes);
 
 // 404 & Centralized Error Handling
 app.use(notFoundHandler);
