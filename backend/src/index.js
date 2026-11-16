@@ -4,6 +4,8 @@ const { PORT, NODE_ENV } = require('./config/env');
 const { initDb } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const animalRoutes = require('./routes/animalRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
+const followUpRoutes = require('./routes/followUpRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -39,6 +41,16 @@ app.get('/', (req, res) => {
         list: 'GET /api/v1/animals',
         detail: 'GET /api/v1/animals/:id',
         create: 'POST /api/v1/animals',
+        claim: 'PATCH /api/v1/animals/:id/claim',
+      },
+      adoptionApplications: {
+        submit: 'POST /api/v1/adoption-applications',
+        myApplications: 'GET /api/v1/adoption-applications/me',
+        updateStatus: 'PATCH /api/v1/adoption-applications/:id/status',
+      },
+      followUps: {
+        create: 'POST /api/v1/follow-ups',
+        list: 'GET /api/v1/follow-ups',
       },
     },
   });
@@ -56,29 +68,39 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/animals', animalRoutes);
+app.use('/api/v1/adoption-applications', applicationRoutes);
+app.use('/api/v1/follow-ups', followUpRoutes);
 
 // 404 & Centralized Error Handling
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start Server
-async function startServer() {
-  await initDb();
+// Start Server only when run directly
+if (require.main === module) {
+  async function startServer() {
+    await initDb();
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`========================================`);
-    console.log(`Adopt-me Backend API running on port ${PORT}`);
-    console.log(`Environment: ${NODE_ENV}`);
-    console.log(`Routes:`);
-    console.log(`  POST /api/v1/auth/register`);
-    console.log(`  POST /api/v1/auth/login`);
-    console.log(`  POST /api/v1/animals`);
-    console.log(`  GET  /api/v1/animals`);
-    console.log(`  GET  /api/v1/animals/:id`);
-    console.log(`========================================`);
-  });
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`========================================`);
+      console.log(`Adopt-me Backend API running on port ${PORT}`);
+      console.log(`Environment: ${NODE_ENV}`);
+      console.log(`Routes:`);
+      console.log(`  POST  /api/v1/auth/register`);
+      console.log(`  POST  /api/v1/auth/login`);
+      console.log(`  POST  /api/v1/animals`);
+      console.log(`  GET   /api/v1/animals`);
+      console.log(`  GET   /api/v1/animals/:id`);
+      console.log(`  PATCH /api/v1/animals/:id/claim`);
+      console.log(`  POST  /api/v1/adoption-applications`);
+      console.log(`  GET   /api/v1/adoption-applications/me`);
+      console.log(`  PATCH /api/v1/adoption-applications/:id/status`);
+      console.log(`  POST  /api/v1/follow-ups`);
+      console.log(`  GET   /api/v1/follow-ups`);
+      console.log(`========================================`);
+    });
+  }
+
+  startServer();
 }
-
-startServer();
 
 module.exports = app;

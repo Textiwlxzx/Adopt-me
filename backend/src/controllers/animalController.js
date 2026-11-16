@@ -1,8 +1,17 @@
+const fs = require('fs');
+const path = require('path');
 const db = require('../config/db');
+const { uploadToCloudinary } = require('./uploadController');
+const { CLOUDINARY } = require('../config/env');
 
 const VALID_SPECIES = ['dog', 'cat', 'other'];
 const VALID_GENDERS = ['male', 'female'];
 const VALID_STATUSES = ['street', 'fostered', 'adopted'];
+
+const uploadDir = path.join(__dirname, '../../public/uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // POST /api/v1/animals (แจ้ง/ลงทะเบียนสัตว์ที่พบใหม่ - 201 Created)
 async function createAnimal(req, res, next) {
@@ -29,7 +38,6 @@ async function createAnimal(req, res, next) {
       caretakerId,
     } = req.body;
 
-    // Validate required fields
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -37,7 +45,6 @@ async function createAnimal(req, res, next) {
       });
     }
 
-    // Validate and normalize species ENUM ('dog', 'cat', 'other')
     const normalizedSpecies = (species || 'other').toLowerCase();
     if (!VALID_SPECIES.includes(normalizedSpecies)) {
       return res.status(400).json({
@@ -46,7 +53,6 @@ async function createAnimal(req, res, next) {
       });
     }
 
-    // Validate gender ENUM ('male', 'female', nullable)
     let normalizedGender = null;
     if (gender) {
       const g = gender.toLowerCase();
@@ -59,16 +65,6 @@ async function createAnimal(req, res, next) {
       normalizedGender = g;
     }
 
-    // Validate status ENUM ('street', 'fostered', 'adopted')
-    const normalizedStatus = (status || 'street').toLowerCase();
-    if (!VALID_STATUSES.includes(normalizedStatus)) {
-      return res.status(400).json({
-        success: false,
-        error: { message: `Invalid status. Allowed values: ${VALID_STATUSES.join(', ')}` },
-      });
-    }
-
-    // Parse age (INT)
     let parsedAge = null;
     if (age !== undefined && age !== null && age !== '') {
       const num = parseInt(age, 10);
@@ -77,17 +73,57 @@ async function createAnimal(req, res, next) {
       }
     }
 
-    const finalPhotoUrl = photo_url || photoUrl || image_url || imageUrl || null;
+    // Determine photo url:
+    let finalPhotoUrl = photo_url || photoUrl || image_url || imageUrl || null;
+
+    if (req.file) {
+      if (CLOUDINARY && CLOUDINARY.cloud_name && CLOUDINARY.api_key && CLOUDINARY.api_secret) {
+        try {
+          const uploadResult = await uploadToCloudinary(req.file.buffer, 'adopt-me/animals');
+          finalPhotoUrl = uploadResult.secure_url;
+        } catch (uploadErr) {
+          console.error('[Cloudinary Upload Error]', uploadErr.message);
+          return res.status(500).json({
+            success: false,
+            error: { message: `Cloudinary upload failed: ${uploadErr.message}` },
+          });
+        }
+      } else {
+        const ext = path.extname(req.file.originalname) || '.jpg';
+        const filename = `animal-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        const filePath = path.join(uploadDir, filename);
+        fs.writeFileSync(filePath, req.file.buffer);
+        finalPhotoUrl = `http://localhost:5000/uploads/${filename}`;
+      }
+    }
+
     const finalLocationFound = location_found || locationFound || location || null;
     const finalHealthCondition = health_condition || healthCondition || null;
     const finalPersonalityNote = personality_note || personalityNote || null;
-    const finalCaretakerId = caretaker_id || caretakerId || null;
+
+    // 🌟 ตรวจสอบผู้สร้าง:
+    // ถ้า Caretaker เป็นคนประกาศ: ตั้งตัวเองเป็น caretaker_id และสถานะเป็น fostered (พร้อมรับเลี้ยง)
+    // ถ้า Guest หรือ Adopter ประกาศ: caretaker_id = null และสถานะเป็น street (รอผู้ดูแล)
+    const currentUser = req.user;
+    let finalCaretakerId = null;
+    let finalStatus = 'street';
+
+    if (currentUser && currentUser.role === 'caretaker') {
+      finalCaretakerId = currentUser.id;
+      finalStatus = 'fostered';
+    } else if (currentUser && currentUser.role === 'admin') {
+      finalCaretakerId = caretaker_id || caretakerId || currentUser.id;
+      finalStatus = status || 'fostered';
+    } else {
+      finalCaretakerId = caretaker_id || caretakerId || null;
+      finalStatus = (status || 'street').toLowerCase();
+    }
 
     const result = await db.query(
       `INSERT INTO animals (
         caretaker_id, name, species, breed, age, gender,
-        health_condition, personality_note, photo_url, location_found, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        health_condition, personality_note, photo_url, location_found, status, is_approved
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)
       RETURNING *`,
       [
         finalCaretakerId,
@@ -100,13 +136,13 @@ async function createAnimal(req, res, next) {
         finalPersonalityNote ? finalPersonalityNote.trim() : null,
         finalPhotoUrl,
         finalLocationFound ? finalLocationFound.trim() : null,
-        normalizedStatus,
+        finalStatus,
       ]
     );
 
     return res.status(201).json({
       success: true,
-      message: 'Animal registered successfully',
+      message: 'ลงทะเบียนสัตว์เรียบร้อยแล้ว',
       data: result.rows[0],
     });
   } catch (err) {
@@ -114,21 +150,29 @@ async function createAnimal(req, res, next) {
   }
 }
 
-// GET /api/v1/animals (ดึงรายการสัตว์ทั้งหมด - 200 OK)
+// GET /api/v1/animals (ดึงรายการสัตว์ - 200 OK)
 async function getAllAnimals(req, res, next) {
   try {
-    const { species, status, gender, search, limit = 50, offset = 0 } = req.query;
+    const { species, status, gender, search, caretaker_id, caretakerId, limit = 50, offset = 0 } = req.query;
 
     let queryText = `
       SELECT 
         a.*,
         u.name as caretaker_name,
-        u.phone as caretaker_phone
+        u.phone as caretaker_phone,
+        u.email as caretaker_email
       FROM animals a
       LEFT JOIN users u ON a.caretaker_id = u.id
     `;
     const queryParams = [];
     const conditions = [];
+
+    // Filter by specific caretaker if requested
+    const targetCaretaker = caretaker_id || caretakerId;
+    if (targetCaretaker) {
+      queryParams.push(Number(targetCaretaker));
+      conditions.push(`a.caretaker_id = $${queryParams.length}`);
+    }
 
     if (species && VALID_SPECIES.includes(species.toLowerCase())) {
       queryParams.push(species.toLowerCase());
@@ -162,7 +206,6 @@ async function getAllAnimals(req, res, next) {
 
     queryText += ' ORDER BY a.created_at DESC';
 
-    // Pagination
     queryParams.push(parseInt(limit, 10) || 50);
     queryText += ` LIMIT $${queryParams.length}`;
 
@@ -222,8 +265,58 @@ async function getAnimalById(req, res, next) {
   }
 }
 
+// PATCH /api/v1/animals/:id/claim (รับเป็นคนดูแล (claim) สัตว์ตัวนี้ - Caretaker / Admin - 200 OK)
+async function claimAnimal(req, res, next) {
+  try {
+    const { id } = req.params;
+    const caretakerId = req.user.id;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Invalid animal ID format.' },
+      });
+    }
+
+    const checkAnimal = await db.query('SELECT * FROM animals WHERE id = $1', [Number(id)]);
+    if (checkAnimal.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: `Animal with ID ${id} not found.` },
+      });
+    }
+
+    const animal = checkAnimal.rows[0];
+
+    if (animal.caretaker_id && animal.caretaker_id !== caretakerId && req.user.role !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        error: { message: `Animal is already claimed by another caretaker (ID: ${animal.caretaker_id}).` },
+      });
+    }
+
+    const newStatus = animal.status === 'street' ? 'fostered' : animal.status;
+    const updateResult = await db.query(
+      `UPDATE animals 
+       SET caretaker_id = $1, status = $2
+       WHERE id = $3
+       RETURNING *`,
+      [caretakerId, newStatus, Number(id)]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Animal claimed successfully',
+      data: updateResult.rows[0],
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createAnimal,
   getAllAnimals,
   getAnimalById,
+  claimAnimal,
 };

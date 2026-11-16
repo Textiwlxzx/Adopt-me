@@ -7,10 +7,15 @@ module.exports = {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 5432,
     database: process.env.DB_NAME || 'dev',
-    user: process.env.DB_USER || 'dev',
-    password: process.env.DB_PASSWORD || 'aa1234',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'wasd',
   },
   JWT_SECRET: process.env.JWT_SECRET || 'secret123',
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || '24h',
   PASSWORD_SALT: process.env.PASSWORD_ENDEC_SALT || 'saltSALT',
+  CLOUDINARY: {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'qlqboj8f',
+    api_key: process.env.CLOUDINARY_API_KEY || '241973542599985',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '1yZF5hG-S67k0LxDU2SoQ3qY77g',
+  },
 };
