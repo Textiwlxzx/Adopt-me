@@ -122,8 +122,8 @@ async function createAnimal(req, res, next) {
     const result = await db.query(
       `INSERT INTO animals (
         caretaker_id, name, species, breed, age, gender,
-        health_condition, personality_note, photo_url, location_found, status, is_approved
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)
+        health_condition, personality_note, photo_url, location_found, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *`,
       [
         finalCaretakerId,

@@ -20,6 +20,11 @@ export default function App() {
   const [myApplications, setMyApplications] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [showRegisterPopup, setShowRegisterPopup] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorPopupMsg, setErrorPopupMsg] = useState('');
+  const [showAdoptPopup, setShowAdoptPopup] = useState(false);
 
   const showAlert = (msg, type = 'error') => {
     setAlert({ msg, type });
@@ -126,7 +131,7 @@ export default function App() {
   const Topbar = ({ auth = false }) => (
     <header className="topbar">
       <button type="button" className="brand" onClick={() => setPage('home')}>
-        <span className="brand-icon">🐾</span>
+        
         <span>Adopt Me</span>
       </button>
 
@@ -360,10 +365,16 @@ export default function App() {
           throw new Error(data.error?.message || 'เกิดข้อผิดพลาดในการทำรายการ');
         }
 
-        showAlert(isRegister ? 'สมัครสมาชิกสำเร็จ!' : 'เข้าสู่ระบบสำเร็จ!', 'success');
-        handleLoginSuccess(data.data.user, data.data.token);
+        if (isRegister) {
+          handleLoginSuccess(data.data.user, data.data.token);
+          setShowRegisterPopup(true);
+        } else {
+          handleLoginSuccess(data.data.user, data.data.token);
+          setShowLoginPopup(true);
+        }
       } catch (err) {
-        showAlert(err.message, 'error');
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
       } finally {
         setLoading(false);
       }
@@ -371,9 +382,9 @@ export default function App() {
 
     return (
       <div className="page">
-        <Topbar auth={true} />
+                <Topbar auth={true} />
         <form className="auth-page" onSubmit={handleSubmit}>
-          <div className="auth-logo-text">🐾</div>
+          <img src="/logo.png" alt="AdoptMe" className="auth-logo" />
           <h1>{isRegister ? 'Register' : 'Login'}</h1>
 
           {alert && (
@@ -480,6 +491,15 @@ export default function App() {
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [registeredData, setRegisteredData] = useState(null);
+
+    const handleClosePopup = () => {
+      setShowPopup(false);
+      if (registeredData) {
+        handleLoginSuccess(registeredData.user, registeredData.token);
+      }
+    };
 
     // ตรวจสอบสิทธิ์ตั้งแต่ตอนเข้าหน้านี้
     if (!currentUser || (currentUser.role !== 'caretaker' && currentUser.role !== 'admin')) {
@@ -543,7 +563,8 @@ export default function App() {
         fetchMyCaredAnimals();
         setPage('my-animals');
       } catch (err) {
-        showAlert(err.message, 'error');
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
       } finally {
         setLoading(false);
       }
@@ -844,6 +865,15 @@ export default function App() {
     const [address, setAddress] = useState(currentUser ? currentUser.address || '' : '');
     const [reason, setReason] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [registeredData, setRegisteredData] = useState(null);
+
+    const handleClosePopup = () => {
+      setShowPopup(false);
+      if (registeredData) {
+        handleLoginSuccess(registeredData.user, registeredData.token);
+      }
+    };
 
     if (!pet) {
       return (
@@ -890,9 +920,10 @@ export default function App() {
 
         showAlert('ส่งใบสมัครขอรับเลี้ยงสำเร็จ!', 'success');
         await fetchMyApplications();
-        setPage('applications');
+        setShowAdoptPopup(true);
       } catch (err) {
-        showAlert(err.message, 'error');
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
       } finally {
         setLoading(false);
       }
@@ -1047,6 +1078,15 @@ export default function App() {
   const ReviewPage = () => {
     const [selectedReviewApp, setSelectedReviewApp] = useState(selectedApp || myApplications[0] || null);
     const [loading, setLoading] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [registeredData, setRegisteredData] = useState(null);
+
+    const handleClosePopup = () => {
+      setShowPopup(false);
+      if (registeredData) {
+        handleLoginSuccess(registeredData.user, registeredData.token);
+      }
+    };
 
     const handleUpdateStatus = async (newStatus) => {
       if (!selectedReviewApp) return;
@@ -1077,7 +1117,8 @@ export default function App() {
           setPage('home');
         }
       } catch (err) {
-        showAlert(err.message, 'error');
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
       } finally {
         setLoading(false);
       }
@@ -1190,6 +1231,15 @@ export default function App() {
     const [status, setStatus] = useState('good');
     const [note, setNote] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [registeredData, setRegisteredData] = useState(null);
+
+    const handleClosePopup = () => {
+      setShowPopup(false);
+      if (registeredData) {
+        handleLoginSuccess(registeredData.user, registeredData.token);
+      }
+    };
 
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -1221,7 +1271,8 @@ export default function App() {
         showAlert('บันทึกผลการติดตามหลังรับเลี้ยงเรียบร้อยแล้ว!', 'success');
         setPage('home');
       } catch (err) {
-        showAlert(err.message, 'error');
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
       } finally {
         setLoading(false);
       }
@@ -1283,27 +1334,149 @@ export default function App() {
   };
 
   // Router View
-  switch (page) {
-    case 'login':
-      return <AuthPage isRegister={false} />;
-    case 'register':
-      return <AuthPage isRegister={true} />;
-    case 'report':
-      return <ReportPage />;
-    case 'my-animals':
-      return <MyAnimalsPage />;
-    case 'detail':
-      return <DetailPage />;
-    case 'apply':
-      return <ApplyPage />;
-    case 'applications':
-      return <ApplicationsPage />;
-    case 'review':
-      return <ReviewPage />;
-    case 'followup':
-      return <FollowupPage />;
-    case 'home':
-    default:
-      return <HomePage />;
-  }
+  const renderPage = () => {
+    switch (page) {
+      case 'login':
+        return <AuthPage isRegister={false} />;
+      case 'register':
+        return <AuthPage isRegister={true} />;
+      case 'report':
+        return <ReportPage />;
+      case 'my-animals':
+        return <MyAnimalsPage />;
+      case 'detail':
+        return <DetailPage />;
+      case 'apply':
+        return <ApplyPage />;
+      case 'applications':
+        return <ApplicationsPage />;
+      case 'review':
+        return <ReviewPage />;
+      case 'followup':
+        return <FollowupPage />;
+      case 'home':
+      default:
+        return <HomePage />;
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {renderPage()}
+      {showRegisterPopup && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0,
+            width: '100vw', height: '100vh',
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, cursor: 'pointer',
+          }}
+          onClick={() => setShowRegisterPopup(false)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: '16px', padding: '2rem 2.5rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              position: 'relative', textAlign: 'center', maxWidth: '380px', width: '90%', cursor: 'default',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, color: '#333' }}
+              onClick={() => setShowRegisterPopup(false)}
+            >✕</button>
+            <img src="/popup-cat.png" alt="แมวน้อย" style={{ width: '220px', height: 'auto', display: 'block', margin: '0 auto 1rem' }} />
+            <p style={{ color: '#2a9d4e', fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>ลงทะเบียนสำเร็จ</p>
+          </div>
+        </div>
+      )}
+      {showLoginPopup && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0,
+            width: '100vw', height: '100vh',
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, cursor: 'pointer',
+          }}
+          onClick={() => setShowLoginPopup(false)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: '16px', padding: '2rem 2.5rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              position: 'relative', textAlign: 'center', maxWidth: '380px', width: '90%', cursor: 'default',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, color: '#333' }}
+              onClick={() => setShowLoginPopup(false)}
+            >✕</button>
+            <img src="/popup-cat.png" alt="แมวน้อย" style={{ width: '220px', height: 'auto', display: 'block', margin: '0 auto 1rem' }} />
+            <p style={{ color: '#2a9d4e', fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>เข้าสู่ระบบสำเร็จ</p>
+          </div>
+        </div>
+      )}
+      {showErrorPopup && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0,
+            width: '100vw', height: '100vh',
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, cursor: 'pointer',
+          }}
+          onClick={() => setShowErrorPopup(false)}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: '16px', padding: '2rem 2.5rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              position: 'relative', textAlign: 'center', maxWidth: '380px', width: '90%', cursor: 'default',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, color: '#333' }}
+              onClick={() => setShowErrorPopup(false)}
+            >✕</button>
+            <img src="/popup-cat-error.png" alt="เกิดข้อผิดพลาด" style={{ width: '220px', height: 'auto', display: 'block', margin: '0 auto 1rem' }} />
+            <p style={{ color: '#e53e3e', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{errorPopupMsg}</p>
+          </div>
+        </div>
+      )}
+      {showAdoptPopup && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0,
+            width: '100vw', height: '100vh',
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, cursor: 'pointer',
+          }}
+          onClick={() => { setShowAdoptPopup(false); setPage('applications'); }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: '16px', padding: '2rem 2.5rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              position: 'relative', textAlign: 'center', maxWidth: '380px', width: '90%', cursor: 'default',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1, color: '#333' }}
+              onClick={() => { setShowAdoptPopup(false); setPage('applications'); }}
+            >✕</button>
+            <img src="/popup-adopt.png" alt="ส่งคำขอสำเร็จ" style={{ width: '220px', height: 'auto', display: 'block', margin: '0 auto 1rem' }} />
+            <p style={{ color: '#2a9d4e', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+              ส่งคำขอรับเลี้ยงสำเร็จ<br />กำลังรออนุมัติ
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -133,6 +133,26 @@ async function initDb(retries = 5, delayMs = 3000) {
               created_by INT REFERENCES users(id) ON DELETE SET NULL
           );
         `);
+
+        // Auto-seed default accounts if users table is empty
+        const userCountRes = await client.query('SELECT COUNT(*) FROM users');
+        if (parseInt(userCountRes.rows[0].count, 10) === 0) {
+          const bcrypt = require('bcryptjs');
+          const userPw = await bcrypt.hash('password1234', 10);
+          const adminPw = await bcrypt.hash('admin1234', 10);
+
+          await client.query(`
+            INSERT INTO users (name, email, password, phone, role, address)
+            VALUES 
+              ($1, $2, $3, $4, $5, $6),
+              ($7, $8, $9, $10, $11, $12)
+          `, [
+            'Somchai Jaidee', 'somchai@example.com', userPw, '0812345678', 'adopter', 'Bangkok',
+            'Admin User', 'admin@test.com', adminPw, '0899999999', 'admin', 'Bangkok',
+          ]);
+          console.log('[DB] Default accounts seeded: somchai@example.com / password1234, admin@test.com / admin1234');
+        }
+
         console.log('[DB] Schema initialized successfully: users, animals, adoption_applications, follow_ups are ready.');
         return;
       } finally {
