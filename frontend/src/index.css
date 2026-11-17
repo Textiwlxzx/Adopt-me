@@ -338,13 +338,16 @@ img {
 }
 
 .pet-card {
-  height: 237px;
+  min-height: 250px;
+  height: auto;
   overflow: hidden;
   border: 1px solid #e0e7e1;
   border-radius: 10px;
   background: white;
   text-align: left;
   transition: transform 0.15s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .pet-card:hover {
@@ -355,6 +358,7 @@ img {
 .pet-photo-container {
   height: 142px;
   width: 100%;
+  flex-shrink: 0;
   overflow: hidden;
   background: var(--placeholder);
 }
@@ -380,16 +384,23 @@ img {
   flex-direction: column;
   gap: 4px;
   padding: 12px 13px;
+  flex: 1;
 }
 
 .pet-info strong {
   margin-top: 1px;
   font-size: 16px;
   font-weight: 400;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.pet-info > span:last-child {
-  font-size: 14px;
+.pet-info > span {
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .mini-apps {

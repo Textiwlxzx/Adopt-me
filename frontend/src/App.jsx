@@ -154,17 +154,7 @@ export default function App() {
               </button>
             )}
 
-            {currentUser.role === 'admin' || currentUser.role === 'caretaker' ? (
-              <button
-                type="button"
-                onClick={() => {
-                  fetchMyApplications();
-                  setPage('review');
-                }}
-              >
-                พิจารณาใบสมัคร ({myApplications.filter((a) => a.status === 'submitted').length})
-              </button>
-            ) : (
+            {currentUser.role !== 'admin' && currentUser.role !== 'caretaker' && (
               <button
                 type="button"
                 onClick={() => {
@@ -259,7 +249,7 @@ export default function App() {
                       {pet.breed || pet.location_found || 'ไม่ระบุสายพันธุ์'}
                     </span>
                     {pet.caretaker_name && (
-                      <span style={{ fontSize: '12px', color: 'var(--teal)' }}>
+                      <span style={{ fontSize: '13px', color: 'var(--teal)', fontWeight: 500 }}>
                         ผู้ดูแล: {pet.caretaker_name}
                       </span>
                     )}
@@ -1204,21 +1194,42 @@ export default function App() {
             </section>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleUpdateStatus('approved'); }}>
+          {selectedReviewApp.status === 'approved' ? (
             <div className="review-actions">
               <button
                 type="button"
-                className="reject"
-                disabled={loading}
-                onClick={() => handleUpdateStatus('rejected')}
+                className="primary yellow"
+                onClick={() => {
+                  setSelectedApp(selectedReviewApp);
+                  setPage('followup');
+                }}
               >
-                ปฏิเสธใบสมัคร
-              </button>
-              <button type="submit" className="primary yellow" disabled={loading}>
-                อนุมัติใบสมัคร
+                บันทึกการติดตาม (Follow-up)
               </button>
             </div>
-          </form>
+          ) : selectedReviewApp.status === 'rejected' ? (
+            <div className="review-actions">
+              <span style={{ color: 'var(--muted)', fontSize: '16px', alignSelf: 'center' }}>
+                ใบสมัครนี้ได้รับการปฏิเสธแล้ว
+              </span>
+            </div>
+          ) : (
+            <form onSubmit={(e) => { e.preventDefault(); handleUpdateStatus('approved'); }}>
+              <div className="review-actions">
+                <button
+                  type="button"
+                  className="reject"
+                  disabled={loading}
+                  onClick={() => handleUpdateStatus('rejected')}
+                >
+                  ปฏิเสธใบสมัคร
+                </button>
+                <button type="submit" className="primary yellow" disabled={loading}>
+                  {loading ? 'กำลังบันทึก...' : 'อนุมัติใบสมัคร'}
+                </button>
+              </div>
+            </form>
+          )}
         </main>
       </div>
     );
