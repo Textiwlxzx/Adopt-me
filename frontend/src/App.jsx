@@ -476,8 +476,8 @@ export default function App() {
     const [personality, setPersonality] = useState('');
     const [health, setHealth] = useState('');
     const [locationFound, setLocationFound] = useState('');
-    const [imageFile, setImageFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState('');
+    const [imageFiles, setImageFiles] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [registeredData, setRegisteredData] = useState(null);
@@ -489,13 +489,22 @@ export default function App() {
       }
     };
 
-    // ทุกคนสามารถเข้าหน้านี้เพื่อโพสต์สัตว์ได้ (Guest / Adopter / Caretaker)
+    // รองรับการเลือกหลายรูป
     const handleFileChange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        setImageFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        const newFiles = [...imageFiles, ...files];
+        setImageFiles(newFiles);
+        const newPreviews = files.map((file) => URL.createObjectURL(file));
+        setPreviewUrls((prev) => [...prev, ...newPreviews]);
       }
+    };
+
+    const handleRemoveImage = (index, e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setImageFiles((prev) => prev.filter((_, i) => i !== index));
+      setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
@@ -512,8 +521,13 @@ export default function App() {
       formData.append('health_condition', health);
       formData.append('location_found', locationFound);
 
-      if (imageFile) {
-        formData.append('image', imageFile);
+      if (imageFiles.length > 0) {
+        // ส่งไฟล์แรกลง 'image' เพื่อความเข้ากันได้แบบเดิม
+        formData.append('image', imageFiles[0]);
+        // ส่งไฟล์ทั้งหมดลง 'images'
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
       }
 
       try {
@@ -571,17 +585,90 @@ export default function App() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <label className="upload">
-              {previewUrl ? (
-                <img src={previewUrl} alt="Preview" className="preview" />
-              ) : (
-                <>
-                  <span className="upload-icon">📷</span>
-                  <span>กดเพื่อเพิ่มรูปภาพ</span>
-                </>
-              )}
-              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
+            <label className="upload" style={{ minHeight: '160px', height: 'auto', padding: '16px' }}>
+              <div style={{ textAlign: 'center', cursor: 'pointer' }}>
+                <span className="upload-icon" style={{ display: 'block', fontSize: '40px' }}>📷</span>
+                <span>กดเพื่อเพิ่มรูปภาพ (เลือกได้หลายรูป)</span>
+                {imageFiles.length > 0 && (
+                  <span style={{ display: 'block', fontSize: '13px', color: '#10b981', marginTop: '4px', fontWeight: 600 }}>
+                    เลือกแล้ว {imageFiles.length} รูป
+                  </span>
+                )}
+              </div>
+              <input type="file" accept="image/*" multiple hidden onChange={handleFileChange} />
             </label>
+
+            {previewUrls.length > 0 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                  gap: '12px',
+                  width: 'min(632px, 100%)',
+                  margin: '16px auto 0',
+                }}
+              >
+                {previewUrls.map((url, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      position: 'relative',
+                      height: '100px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <img
+                      src={url}
+                      alt={`Preview ${idx + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemoveImage(idx, e)}
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        background: 'rgba(0,0,0,0.6)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                      }}
+                      title="ลบรูปนี้"
+                    >
+                      ✕
+                    </button>
+                    {idx === 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          bottom: '0',
+                          left: '0',
+                          right: '0',
+                          background: 'rgba(16, 185, 129, 0.85)',
+                          color: '#fff',
+                          fontSize: '10px',
+                          textAlign: 'center',
+                          padding: '2px 0',
+                          fontWeight: 600,
+                        }}
+                      >
+                        รูปหน้าปก
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="two-col form-grid">
               <label className="field">
@@ -723,6 +810,7 @@ export default function App() {
   const DetailPage = () => {
     const [pet, setPet] = useState(selectedAnimal);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [activePhoto, setActivePhoto] = useState(null);
 
     // ดึงข้อมูลสัตว์ล่าสุดผ่าน Endpoint GET /api/v1/animals/:id
     useEffect(() => {
@@ -734,6 +822,7 @@ export default function App() {
           const data = await res.json();
           if (data.success && data.data) {
             setPet(data.data);
+            setActivePhoto(data.data.photo_url || null);
           }
         } catch (err) {
           console.error('Failed to fetch animal detail:', err);
@@ -761,18 +850,69 @@ export default function App() {
 
     const isMyPet = currentUser && pet.caretaker_id === currentUser.id;
 
+    // แยกรายการรูปภาพทั้งหมด
+    let photoList = [];
+    if (pet?.photos) {
+      try {
+        const parsed = typeof pet.photos === 'string' ? JSON.parse(pet.photos) : pet.photos;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          photoList = parsed;
+        }
+      } catch (e) {
+        photoList = [];
+      }
+    }
+    if (photoList.length === 0 && pet?.photo_url) {
+      photoList = [pet.photo_url];
+    }
+
+    const displayPhoto = activePhoto || (photoList.length > 0 ? photoList[0] : pet?.photo_url);
+
     return (
       <div className="page">
         <Topbar />
         <main className="detail content">
           <section className="gallery" aria-label="รูปภาพสัตว์">
             <div className="main-photo">
-              {pet.photo_url ? (
-                <img src={pet.photo_url} alt={pet.name} />
+              {displayPhoto ? (
+                <img src={displayPhoto} alt={pet.name} />
               ) : (
                 <div style={{ color: 'var(--muted)', fontSize: '20px' }}>ไม่มีรูปภาพ</div>
               )}
             </div>
+
+            {photoList.length > 1 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))',
+                  gap: '8px',
+                  marginTop: '12px',
+                }}
+              >
+                {photoList.map((url, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setActivePhoto(url)}
+                    style={{
+                      height: '70px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: displayPhoto === url ? '2.5px solid #10b981' : '1px solid #e5e7eb',
+                      boxShadow: displayPhoto === url ? '0 0 6px rgba(16, 185, 129, 0.4)' : 'none',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <img
+                      src={url}
+                      alt={`${pet.name} thumb ${idx + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="animal-copy">

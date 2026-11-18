@@ -107,10 +107,18 @@ async function initDb(retries = 5, delayMs = 3000) {
               health_condition TEXT,
               personality_note TEXT,
               photo_url VARCHAR(255),
+              photos TEXT,
               location_found VARCHAR(255),
               status animal_status NOT NULL DEFAULT 'street',
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
+
+          -- Ensure photos column exists for multiple images
+          DO $$ BEGIN
+              ALTER TABLE animals ADD COLUMN IF NOT EXISTS photos TEXT;
+          EXCEPTION
+              WHEN duplicate_column THEN null;
+          END $$;
 
           -- 4. Adoption Applications Table
           CREATE TABLE IF NOT EXISTS adoption_applications (

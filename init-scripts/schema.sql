@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS animals (
     health_condition TEXT,
     personality_note TEXT,
     photo_url VARCHAR(255),
+    photos TEXT,
     location_found VARCHAR(255),
     status animal_status NOT NULL DEFAULT 'street',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

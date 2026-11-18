@@ -73,29 +73,55 @@ async function createAnimal(req, res, next) {
       }
     }
 
-    // Determine photo url:
-    let finalPhotoUrl = photo_url || photoUrl || image_url || imageUrl || null;
+    // Determine photo urls (supports single or multiple):
+    let uploadedUrls = [];
 
-    if (req.file) {
-      if (CLOUDINARY && CLOUDINARY.cloud_name && CLOUDINARY.api_key && CLOUDINARY.api_secret) {
-        try {
-          const uploadResult = await uploadToCloudinary(req.file.buffer, 'adopt-me/animals');
-          finalPhotoUrl = uploadResult.secure_url;
-        } catch (uploadErr) {
-          console.error('[Cloudinary Upload Error]', uploadErr.message);
-          return res.status(500).json({
-            success: false,
-            error: { message: `Cloudinary upload failed: ${uploadErr.message}` },
-          });
+    // Check files uploaded via multer
+    const filesToUpload = [];
+    if (req.files) {
+      if (req.files.image && req.files.image.length > 0) {
+        filesToUpload.push(...req.files.image);
+      }
+      if (req.files.images && req.files.images.length > 0) {
+        filesToUpload.push(...req.files.images);
+      }
+    } else if (req.file) {
+      filesToUpload.push(req.file);
+    }
+
+    if (filesToUpload.length > 0) {
+      for (const file of filesToUpload) {
+        if (CLOUDINARY && CLOUDINARY.cloud_name && CLOUDINARY.api_key && CLOUDINARY.api_secret) {
+          try {
+            const uploadResult = await uploadToCloudinary(file.buffer, 'adopt-me/animals');
+            uploadedUrls.push(uploadResult.secure_url);
+          } catch (uploadErr) {
+            console.error('[Cloudinary Upload Error]', uploadErr.message);
+            // Fallback to local if Cloudinary fails
+            const ext = path.extname(file.originalname) || '.jpg';
+            const filename = `animal-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+            const filePath = path.join(uploadDir, filename);
+            fs.writeFileSync(filePath, file.buffer);
+            uploadedUrls.push(`http://localhost:5000/uploads/${filename}`);
+          }
+        } else {
+          const ext = path.extname(file.originalname) || '.jpg';
+          const filename = `animal-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+          const filePath = path.join(uploadDir, filename);
+          fs.writeFileSync(filePath, file.buffer);
+          uploadedUrls.push(`http://localhost:5000/uploads/${filename}`);
         }
-      } else {
-        const ext = path.extname(req.file.originalname) || '.jpg';
-        const filename = `animal-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-        const filePath = path.join(uploadDir, filename);
-        fs.writeFileSync(filePath, req.file.buffer);
-        finalPhotoUrl = `http://localhost:5000/uploads/${filename}`;
       }
     }
+
+    // Also check if URLs were provided in body
+    const initialPhotoUrl = photo_url || photoUrl || image_url || imageUrl || null;
+    if (initialPhotoUrl && uploadedUrls.length === 0) {
+      uploadedUrls.push(initialPhotoUrl);
+    }
+
+    const finalPhotoUrl = uploadedUrls[0] || null;
+    const finalPhotos = uploadedUrls.length > 0 ? JSON.stringify(uploadedUrls) : null;
 
     const finalLocationFound = location_found || locationFound || location || null;
     const finalHealthCondition = health_condition || healthCondition || null;
@@ -122,8 +148,8 @@ async function createAnimal(req, res, next) {
     const result = await db.query(
       `INSERT INTO animals (
         caretaker_id, name, species, breed, age, gender,
-        health_condition, personality_note, photo_url, location_found, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        health_condition, personality_note, photo_url, photos, location_found, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *`,
       [
         finalCaretakerId,
@@ -135,6 +161,7 @@ async function createAnimal(req, res, next) {
         finalHealthCondition ? finalHealthCondition.trim() : null,
         finalPersonalityNote ? finalPersonalityNote.trim() : null,
         finalPhotoUrl,
+        finalPhotos,
         finalLocationFound ? finalLocationFound.trim() : null,
         finalStatus,
       ]

@@ -5,10 +5,14 @@ const { authenticate, optionalAuthenticate, authorize } = require('../middleware
 const upload = require('../middleware/uploadMiddleware');
 
 // POST /api/v1/animals (ลงทะเบียนสัตว์ใหม่ - ใครก็ได้ทั้ง Guest, Adopter, Caretaker, Admin)
+// รองรับทั้งรูปเดียว (image) และหลายรูป (images) สูงสุด 10 รูป
 router.post(
   '/',
   optionalAuthenticate,
-  upload.single('image'),
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'images', maxCount: 10 },
+  ]),
   animalController.createAnimal
 );
 
