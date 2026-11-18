@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const animalController = require('../controllers/animalController');
-const { authenticate, authorize } = require('../middleware/authMiddleware');
+const { authenticate, optionalAuthenticate, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
-// POST /api/v1/animals (ลงทะเบียนสัตว์ใหม่ - สงวนสิทธิ์เฉพาะ Caretaker และ Admin เท่านั้น)
+// POST /api/v1/animals (ลงทะเบียนสัตว์ใหม่ - ใครก็ได้ทั้ง Guest, Adopter, Caretaker, Admin)
 router.post(
   '/',
-  authenticate,
-  authorize('caretaker', 'admin'),
+  optionalAuthenticate,
   upload.single('image'),
   animalController.createAnimal
 );

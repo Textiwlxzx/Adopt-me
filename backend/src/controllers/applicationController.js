@@ -44,17 +44,29 @@ async function submitApplication(req, res, next) {
     const finalReason = reason ? reason.trim() : null;
     const finalHomeEnv = home_environment || homeEnvironment ? (home_environment || homeEnvironment).trim() : null;
 
+    // 🌟 ถ้าสัตว์ตัวนี้ไม่มีผู้ดูแล (เช่น โพสต์โดย Guest หรือสัตว์ข้างทาง):
+    // ไม่ต้องรอคนอนุมัติ! ปรับสถานะเป็น 'approved' ทันที และปรับสัตว์เป็น 'adopted'
+    const isGuestAnimal = !animal.caretaker_id;
+    const initialStatus = isGuestAnimal ? 'approved' : 'submitted';
+
     const result = await db.query(
       `INSERT INTO adoption_applications (animal_id, applicant_id, reason, home_environment, status)
-       VALUES ($1, $2, $3, $4, 'submitted')
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [Number(finalAnimalId), applicantId, finalReason, finalHomeEnv]
+      [Number(finalAnimalId), applicantId, finalReason, finalHomeEnv, initialStatus]
     );
+
+    if (isGuestAnimal) {
+      await db.query(`UPDATE animals SET status = 'adopted' WHERE id = $1`, [Number(finalAnimalId)]);
+    }
 
     return res.status(201).json({
       success: true,
-      message: 'Adoption application submitted successfully',
+      message: isGuestAnimal 
+        ? 'รับเลี้ยงสัตว์เรียบร้อยแล้ว (สัตว์จาก Guest อนุมัติทันทีไม่ต้องรอการพิจารณา)' 
+        : 'Adoption application submitted successfully',
       data: result.rows[0],
+      autoApproved: isGuestAnimal,
     });
   } catch (err) {
     next(err);
@@ -83,10 +95,12 @@ async function getMyApplications(req, res, next) {
           a.caretaker_id,
           u.name as applicant_name,
           u.phone as applicant_phone,
-          u.email as applicant_email
+          u.email as applicant_email,
+          cu.name as caretaker_name
         FROM adoption_applications app
         JOIN animals a ON app.animal_id = a.id
         JOIN users u ON app.applicant_id = u.id
+        LEFT JOIN users cu ON a.caretaker_id = cu.id
         ORDER BY app.submitted_at DESC
       `;
     } else if (user.role === 'caretaker') {
@@ -104,10 +118,12 @@ async function getMyApplications(req, res, next) {
           a.caretaker_id,
           u.name as applicant_name,
           u.phone as applicant_phone,
-          u.email as applicant_email
+          u.email as applicant_email,
+          cu.name as caretaker_name
         FROM adoption_applications app
         JOIN animals a ON app.animal_id = a.id
         JOIN users u ON app.applicant_id = u.id
+        LEFT JOIN users cu ON a.caretaker_id = cu.id
         WHERE a.caretaker_id = $1 OR app.applicant_id = $1
         ORDER BY app.submitted_at DESC
       `;
@@ -124,10 +140,12 @@ async function getMyApplications(req, res, next) {
           a.caretaker_id,
           u.name as applicant_name,
           u.phone as applicant_phone,
-          u.email as applicant_email
+          u.email as applicant_email,
+          cu.name as caretaker_name
         FROM adoption_applications app
         JOIN animals a ON app.animal_id = a.id
         JOIN users u ON app.applicant_id = u.id
+        LEFT JOIN users cu ON a.caretaker_id = cu.id
         WHERE app.applicant_id = $1
         ORDER BY app.submitted_at DESC
       `;

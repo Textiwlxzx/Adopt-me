@@ -154,7 +154,7 @@ export default function App() {
               </button>
             )}
 
-            {currentUser.role !== 'admin' && currentUser.role !== 'caretaker' && (
+            {currentUser.role !== 'admin' && (
               <button
                 type="button"
                 onClick={() => {
@@ -195,21 +195,14 @@ export default function App() {
           <p>พร้อมหาเพื่อนใหม่ที่ใช่แล้วหรือยัง?</p>
         </div>
 
-        {/* ปุ่มแจ้งพบสัตว์: ถ้าเป็น Caretaker/Admin จะเข้าได้ทันที ถ้าเป็น Guest หรือ Adopter จะแนะนำให้ล็อกอินหรือแจ้งสิทธิ์ */}
+        {/* ปุ่มแจ้งพบสัตว์/ลงทะเบียน: ใครก็สามารถกดโพสต์ได้ (Guest, Adopter, Caretaker) */}
         <button
           type="button"
           onClick={() => {
-            if (!currentUser) {
-              showAlert('กรุณาเข้าสู่ระบบในฐานะ Caretaker เพื่อลงทะเบียนสัตว์', 'error');
-              setPage('login');
-            } else if (currentUser.role !== 'caretaker' && currentUser.role !== 'admin') {
-              showAlert('สิทธิ์การลงทะเบียนสัตว์สงวนไว้สำหรับ Caretaker เท่านั้น', 'error');
-            } else {
-              setPage('report');
-            }
+            setPage('report');
           }}
         >
-          {currentUser?.role === 'caretaker' ? 'ลงทะเบียนสัตว์ใหม่' : 'ลงทะเบียนสัตว์'}
+          {currentUser?.role === 'caretaker' ? 'ลงทะเบียนสัตว์ใหม่' : 'แจ้งพบสัตว์ / ลงทะเบียนสัตว์'}
         </button>
       </section>
 
@@ -286,40 +279,45 @@ export default function App() {
             </button>
           </div>
 
-          {myApplications.length > 0 ? (
-            myApplications.slice(0, 4).map((app) => (
-              <div
-                key={app.id}
-                className="mini-row"
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  setSelectedApp(app);
-                  setPage(
-                    currentUser?.role === 'admin' || currentUser?.role === 'caretaker'
-                      ? 'review'
-                      : 'applications'
-                  );
-                }}
-              >
-                <div className="mini-photo">
-                  {app.animal_photo_url ? (
-                    <img src={app.animal_photo_url} alt={app.animal_name} />
-                  ) : (
-                    'รูป'
-                  )}
+          {(() => {
+            // ถ้าเป็น caretaker ในกล่อง 'ใบสมัครที่ส่งเข้ามา' ให้แสดงเฉพาะใบสมัครที่คนอื่นส่งเข้ามาหาน้องของเรา
+            const displayedApps = currentUser?.role === 'caretaker'
+              ? myApplications.filter((app) => app.caretaker_id === currentUser?.id && app.applicant_id !== currentUser?.id)
+              : myApplications;
+
+            return displayedApps.length > 0 ? (
+              displayedApps.slice(0, 4).map((app) => (
+                <div
+                  key={app.id}
+                  className="mini-row"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setSelectedApp(app);
+                    // ถ้าใบสมัครนี้เราเป็นผู้ขอรับเลี้ยง ให้ไปหน้า applications แต่ถ้าเป็นใบสมัครที่เราเป็นผู้ดูแล ให้ไปหน้า review
+                    const isMyOwnApplication = app.applicant_id === currentUser?.id;
+                    setPage(isMyOwnApplication ? 'applications' : 'review');
+                  }}
+                >
+                  <div className="mini-photo">
+                    {app.animal_photo_url ? (
+                      <img src={app.animal_photo_url} alt={app.animal_name} />
+                    ) : (
+                      'รูป'
+                    )}
+                  </div>
+                  <div className="mini-copy">
+                    <strong>{app.animal_name}</strong>
+                    <span>{new Date(app.submitted_at).toLocaleDateString('th-TH')}</span>
+                  </div>
+                  {renderStatus(app.status)}
                 </div>
-                <div className="mini-copy">
-                  <strong>{app.animal_name}</strong>
-                  <span>{new Date(app.submitted_at).toLocaleDateString('th-TH')}</span>
-                </div>
-                {renderStatus(app.status)}
+              ))
+            ) : (
+              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '14px' }}>
+                {currentUser ? 'ยังไม่มีรายการใบสมัคร' : 'เข้าสู่ระบบเพื่อดูใบสมัคร'}
               </div>
-            ))
-          ) : (
-            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '14px' }}>
-              {currentUser ? 'ยังไม่มีรายการใบสมัคร' : 'เข้าสู่ระบบเพื่อดูใบสมัคร'}
-            </div>
-          )}
+            );
+          })()}
         </aside>
       </main>
     </div>
@@ -491,24 +489,7 @@ export default function App() {
       }
     };
 
-    // ตรวจสอบสิทธิ์ตั้งแต่ตอนเข้าหน้านี้
-    if (!currentUser || (currentUser.role !== 'caretaker' && currentUser.role !== 'admin')) {
-      return (
-        <div className="page">
-          <Topbar />
-          <div className="content standard" style={{ textAlign: 'center' }}>
-            <h2>หน้านี้สงวนสิทธิ์สำหรับ Caretaker เท่านั้น</h2>
-            <p style={{ marginTop: '10px', color: 'var(--muted)' }}>
-              กรุณาเข้าสู่ระบบด้วยบัญชี Caretaker เพื่อลงทะเบียนสัตว์ที่คุณดูแล
-            </p>
-            <button className="primary yellow" onClick={() => setPage('login')} style={{ marginTop: '20px' }}>
-              เข้าสู่ระบบ
-            </button>
-          </div>
-        </div>
-      );
-    }
-
+    // ทุกคนสามารถเข้าหน้านี้เพื่อโพสต์สัตว์ได้ (Guest / Adopter / Caretaker)
     const handleFileChange = (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -536,11 +517,14 @@ export default function App() {
       }
 
       try {
+        const headers = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
         const res = await fetch(`${API_BASE}/animals`, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
           body: formData,
         });
         const data = await res.json();
@@ -548,10 +532,17 @@ export default function App() {
           throw new Error(data.error?.message || 'ไม่สามารถลงทะเบียนสัตว์ได้');
         }
 
-        showAlert('ลงทะเบียนสัตว์ใหม่เรียบร้อยแล้ว! สัตว์ตัวนี้จะบันทึกให้คุณเป็นผู้ดูแลทันที', 'success');
+        const successMsg = currentUser?.role === 'caretaker'
+          ? 'ลงทะเบียนสัตว์ใหม่เรียบร้อยแล้ว! สัตว์ตัวนี้จะบันทึกให้คุณเป็นผู้ดูแล'
+          : 'แจ้งพบสัตว์ใหม่เรียบร้อยแล้ว! (สถานะ: รอรับเลี้ยง/ไม่ต้องรออนุมัติ)';
+        showAlert(successMsg, 'success');
         fetchAnimals();
-        fetchMyCaredAnimals();
-        setPage('my-animals');
+        if (currentUser?.role === 'caretaker') {
+          fetchMyCaredAnimals();
+          setPage('my-animals');
+        } else {
+          setPage('home');
+        }
       } catch (err) {
         setErrorPopupMsg(err.message);
         setShowErrorPopup(true);
@@ -564,9 +555,13 @@ export default function App() {
       <div className="page">
         <Topbar />
         <main className="report content">
-          <h1 style={{ textAlign: 'center', fontSize: '32px', marginBottom: '8px' }}>ลงทะเบียนสัตว์ใหม่</h1>
+          <h1 style={{ textAlign: 'center', fontSize: '32px', marginBottom: '8px' }}>
+            {currentUser?.role === 'caretaker' ? 'ลงทะเบียนสัตว์ใหม่' : 'แจ้งพบสัตว์ / ลงทะเบียนสัตว์'}
+          </h1>
           <p style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: '24px' }}>
-            คุณกำลังลงทะเบียนในฐานะ Caretaker: <strong>{currentUser.name}</strong> (ระบบจะตั้งให้คุณเป็นผู้ดูแลอัตโนมัติ)
+            {currentUser
+              ? `คุณกำลังลงทะเบียนในฐานะ: ${currentUser.name} (${currentUser.role})`
+              : 'คุณกำลังโพสต์ในฐานะผู้เยี่ยมชม (Guest - สัตว์ตัวนี้จะเปิดให้รับเลี้ยงได้ทันทีไม่ต้องรออนุมัติ)'}
           </p>
 
           {alert && (
@@ -726,9 +721,31 @@ export default function App() {
 
   /* ================= 5. รายละเอียดสัตว์ / รับเป็นผู้ดูแล (DETAIL PAGE) ================= */
   const DetailPage = () => {
-    const pet = selectedAnimal;
+    const [pet, setPet] = useState(selectedAnimal);
+    const [detailLoading, setDetailLoading] = useState(false);
 
-    if (!pet) {
+    // ดึงข้อมูลสัตว์ล่าสุดผ่าน Endpoint GET /api/v1/animals/:id
+    useEffect(() => {
+      if (!selectedAnimal?.id) return;
+      const fetchAnimalDetail = async () => {
+        setDetailLoading(true);
+        try {
+          const res = await fetch(`${API_BASE}/animals/${selectedAnimal.id}`);
+          const data = await res.json();
+          if (data.success && data.data) {
+            setPet(data.data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch animal detail:', err);
+        } finally {
+          setDetailLoading(false);
+        }
+      };
+
+      fetchAnimalDetail();
+    }, [selectedAnimal?.id]);
+
+    if (!pet && !detailLoading) {
       return (
         <div className="page">
           <Topbar />
@@ -755,13 +772,6 @@ export default function App() {
               ) : (
                 <div style={{ color: 'var(--muted)', fontSize: '20px' }}>ไม่มีรูปภาพ</div>
               )}
-            </div>
-
-            <div className="thumbs">
-              <div>รูป 1</div>
-              <div>รูป 2</div>
-              <div>รูป 3</div>
-              <div>รูป 4</div>
             </div>
           </section>
 
@@ -799,7 +809,7 @@ export default function App() {
                   ? isMyPet
                     ? `${pet.caretaker_name} (คุณเป็นผู้ดูแลสัตว์ตัวนี้)`
                     : pet.caretaker_name
-                  : 'ศูนย์ดูแลสัตว์'}
+                  : 'ไม่มีผู้ดูแล'}
               </strong>
             </div>
 
@@ -832,14 +842,14 @@ export default function App() {
                   }
                 }}
               >
-                สมัครรับเลี้ยงสัตว์ตัวนี้
+                {!pet.caretaker_id ? 'รับเลี้ยงสัตว์ตัวนี้ทันที' : 'สมัครรับเลี้ยงสัตว์ตัวนี้'}
               </button>
             )}
 
             <p className="note">
               {pet.caretaker_name
                 ? `สัตว์ตัวนี้มีผู้ดูแลคือคุณ ${pet.caretaker_name} ซึ่งจะเป็นผู้พิจารณาอนุมัติใบสมัคร`
-                : 'ผู้ดูแลสัตว์จะเป็นผู้พิจารณาและอนุมัติใบสมัครรับเลี้ยง'}
+                : 'สัตว์ตัวนี้ไม่มีผู้ดูแล หากคุณกดขอรับเลี้ยง ระบบจะอนุมัติทันที'}
             </p>
           </section>
         </main>
@@ -908,8 +918,12 @@ export default function App() {
           throw new Error(data.error?.message || 'ส่งใบสมัครไม่สำเร็จ');
         }
 
-        showAlert('ส่งใบสมัครขอรับเลี้ยงสำเร็จ!', 'success');
+        const successMessage = data.autoApproved
+          ? '🎉 รับเลี้ยงสัตว์เรียบร้อยแล้ว! (สัตว์ตัวนี้โพสต์โดย Guest จึงได้รับการอนุมัติทันที)'
+          : 'ส่งใบสมัครขอรับเลี้ยงสำเร็จ! กรุณารอ Caretaker พิจารณาอนุมัติ';
+        showAlert(successMessage, 'success');
         await fetchMyApplications();
+        await fetchAnimals();
         setShowAdoptPopup(true);
       } catch (err) {
         setErrorPopupMsg(err.message);
@@ -1002,74 +1016,112 @@ export default function App() {
   };
 
   /* ================= 7. ใบสมัครของฉัน (APPLICATIONS PAGE) ================= */
-  const ApplicationsPage = () => (
-    <div className="page">
-      <Topbar />
-      <main className="content standard applications">
-        <h1>ใบสมัครของฉัน</h1>
-        <p className="subtitle">สถานะใบสมัครรับเลี้ยงของคุณ</p>
+  const ApplicationsPage = () => {
+    // กรองเฉพาะใบสมัครที่ตัวเราเป็นคนยื่นขอรับเลี้ยง (applicant_id === currentUser.id)
+    const mySubmittedApps = myApplications.filter(
+      (app) => app.applicant_id === currentUser?.id || (!app.applicant_id && currentUser?.role !== 'admin')
+    );
 
-        {alert && (
-          <div className={`alert ${alert.type === 'error' ? 'alert-error' : 'alert-success'}`}>
-            {alert.msg}
-          </div>
-        )}
+    return (
+      <div className="page">
+        <Topbar />
+        <main className="content standard applications">
+          <h1>ใบสมัครของฉัน</h1>
+          <p className="subtitle">สถานะใบสมัครขอรับเลี้ยงที่คุณส่ง</p>
 
-        <div className="application-list">
-          {myApplications.length > 0 ? (
-            myApplications.map((app) => (
-              <article key={app.id}>
-                <div className="list-photo">
-                  {app.animal_photo_url ? (
-                    <img src={app.animal_photo_url} alt={app.animal_name} />
-                  ) : (
-                    'รูปสัตว์'
-                  )}
-                </div>
-                <div className="list-copy">
-                  <h2>{app.animal_name}</h2>
-                  <p>
-                    ใบสมัคร #{app.id} · ส่งเมื่อ{' '}
-                    {new Date(app.submitted_at).toLocaleDateString('th-TH')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedAnimal({
-                        id: app.animal_id,
-                        name: app.animal_name,
-                        photo_url: app.animal_photo_url,
-                        species: app.animal_species,
-                        breed: app.animal_breed,
-                        status: app.animal_status,
-                      });
-                      setPage('detail');
-                    }}
-                  >
-                    ดูรายละเอียดสัตว์
-                  </button>
-                </div>
-                {renderStatus(app.status)}
-              </article>
-            ))
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-              ยังไม่มีประวัติการส่งใบสมัครขอรับเลี้ยง
+          {alert && (
+            <div className={`alert ${alert.type === 'error' ? 'alert-error' : 'alert-success'}`}>
+              {alert.msg}
             </div>
           )}
-        </div>
 
-        <p className="footer-note">แสดงเฉพาะใบสมัครของบัญชีที่เข้าสู่ระบบ</p>
-      </main>
-    </div>
-  );
+          <div className="application-list">
+            {mySubmittedApps.length > 0 ? (
+              mySubmittedApps.map((app) => (
+                <article key={app.id}>
+                  <div className="list-photo">
+                    {app.animal_photo_url ? (
+                      <img src={app.animal_photo_url} alt={app.animal_name} />
+                    ) : (
+                      'รูปสัตว์'
+                    )}
+                  </div>
+                  <div className="list-copy">
+                    <h2>{app.animal_name}</h2>
+                    <p>
+                      ใบสมัคร #{app.id} · ส่งเมื่อ{' '}
+                      {new Date(app.submitted_at).toLocaleDateString('th-TH')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAnimal({
+                          id: app.animal_id,
+                          name: app.animal_name,
+                          photo_url: app.animal_photo_url,
+                          species: app.animal_species,
+                          breed: app.animal_breed,
+                          status: app.animal_status,
+                        });
+                        setPage('detail');
+                      }}
+                    >
+                      ดูรายละเอียดสัตว์
+                    </button>
+                  </div>
+                  {renderStatus(app.status)}
+                </article>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                ยังไม่มีประวัติการส่งใบสมัครขอรับเลี้ยง
+              </div>
+            )}
+          </div>
+
+          <p className="footer-note">แสดงเฉพาะใบสมัครของบัญชีที่เข้าสู่ระบบ</p>
+        </main>
+      </div>
+    );
+  };
 
   /* ================= 8. พิจารณาใบสมัคร (REVIEW PAGE - Caretaker & Admin) ================= */
   const ReviewPage = () => {
-    const [selectedReviewApp, setSelectedReviewApp] = useState(selectedApp || myApplications[0] || null);
+    // ใบสมัครที่เข้ามาให้เราพิจารณา:
+    // สำหรับ Caretaker: สัตว์ตัวนั้นต้องมีเราเป็น caretaker (caretaker_id === currentUser.id)
+    // และผู้สมัครต้องไม่ใช่ตัวเราเอง (applicant_id !== currentUser.id)
+    const incomingApps = currentUser?.role === 'admin'
+      ? myApplications
+      : myApplications.filter(
+          (app) => app.caretaker_id === currentUser?.id && app.applicant_id !== currentUser?.id
+        );
+
+    const [selectedReviewApp, setSelectedReviewApp] = useState(
+      incomingApps.find((a) => a.id === selectedApp?.id) || incomingApps[0] || null
+    );
     const [loading, setLoading] = useState(false);
+    const [followUps, setFollowUps] = useState([]);
+    const [loadingFollowUps, setLoadingFollowUps] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [registeredData, setRegisteredData] = useState(null);
+
+    // ดึงประวัติ Follow-up เมื่อเลือกใบสมัคร
+    useEffect(() => {
+      if (selectedReviewApp?.id && token) {
+        setLoadingFollowUps(true);
+        fetch(`${API_BASE}/follow-ups?application_id=${selectedReviewApp.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setFollowUps(data.data || []);
+            }
+          })
+          .catch((err) => console.error('Error fetching follow-ups:', err))
+          .finally(() => setLoadingFollowUps(false));
+      }
+    }, [selectedReviewApp?.id, token]);
 
     const handleClosePopup = () => {
       setShowPopup(false);
@@ -1144,18 +1196,18 @@ export default function App() {
             {renderStatus(selectedReviewApp.status)}
           </div>
 
-          {myApplications.length > 1 && (
+          {incomingApps.length > 1 && (
             <div style={{ marginTop: '20px' }}>
               <span>เลือกใบสมัคร: </span>
               <select
                 value={selectedReviewApp.id}
                 onChange={(e) => {
-                  const found = myApplications.find((a) => a.id === Number(e.target.value));
+                  const found = incomingApps.find((a) => a.id === Number(e.target.value));
                   if (found) setSelectedReviewApp(found);
                 }}
                 style={{ padding: '6px 12px', borderRadius: '4px', border: '1.5px solid #087c70' }}
               >
-                {myApplications.map((a) => (
+                {incomingApps.map((a) => (
                   <option key={a.id} value={a.id}>
                     ใบสมัคร #{a.id} - {a.animal_name} (ผู้สมัคร: {a.applicant_name || 'Adopter'})
                   </option>
@@ -1176,7 +1228,7 @@ export default function App() {
               <h2>{selectedReviewApp.animal_name}</h2>
               <p>รหัสสัตว์: AN-{selectedReviewApp.animal_id}</p>
               <p>รหัสใบสมัคร: APP-{selectedReviewApp.id}</p>
-              <p>ผู้ดูแลสัตว์: {currentUser?.name || 'Caretaker'}</p>
+              <p>ผู้ดูแลสัตว์: {selectedReviewApp.caretaker_name || currentUser?.name || 'Caretaker'}</p>
               <p>สถานะปัจจุบัน: {selectedReviewApp.status}</p>
             </section>
 
@@ -1194,7 +1246,7 @@ export default function App() {
             </section>
           </div>
 
-          {selectedReviewApp.status === 'approved' ? (
+          {selectedReviewApp.status === 'approved' && selectedReviewApp.caretaker_id ? (
             <div className="review-actions">
               <button
                 type="button"
@@ -1204,8 +1256,14 @@ export default function App() {
                   setPage('followup');
                 }}
               >
-                บันทึกการติดตาม (Follow-up)
+                + บันทึกการติดตาม (Follow-up)
               </button>
+            </div>
+          ) : selectedReviewApp.status === 'approved' ? (
+            <div className="review-actions">
+              <span style={{ color: 'var(--teal)', fontSize: '16px', alignSelf: 'center', fontWeight: 500 }}>
+                อนุมัติรับเลี้ยงแล้ว (สัตว์จาก Guest ไม่ต้องบันทึกติดตามผล)
+              </span>
             </div>
           ) : selectedReviewApp.status === 'rejected' ? (
             <div className="review-actions">
@@ -1229,6 +1287,60 @@ export default function App() {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* ประวัติการติดตามผล (Follow-up Timeline) */}
+          {selectedReviewApp.status === 'approved' && selectedReviewApp.caretaker_id && (
+            <section className="followup-timeline-section" style={{ marginTop: '36px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '20px', margin: 0 }}>ประวัติการติดตามผลหลังรับเลี้ยง</h3>
+                <span style={{ fontSize: '14px', color: 'var(--muted)' }}>
+                  บันทึกแล้ว {followUps.length} ครั้ง
+                </span>
+              </div>
+
+              {loadingFollowUps ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
+                  กำลังโหลดข้อมูลการติดตาม...
+                </div>
+              ) : followUps.length > 0 ? (
+                <div className="timeline-container">
+                  {followUps.map((item, idx) => (
+                    <div key={item.id || idx} className="timeline-item">
+                      <div className="timeline-badge-col">
+                        <div className={`timeline-dot ${item.status === 'good' ? 'dot-good' : 'dot-attention'}`} />
+                        {idx !== followUps.length - 1 && <div className="timeline-line" />}
+                      </div>
+                      <div className="timeline-card">
+                        <div className="timeline-card-header">
+                          <div>
+                            <span className="timeline-date">
+                              {item.visit_date ? new Date(item.visit_date).toLocaleDateString('th-TH', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              }) : 'ไม่ระบุวันที่'}
+                            </span>
+                            <span className="timeline-author">โดย {item.caretaker_name || 'ผู้ดูแล'}</span>
+                          </div>
+                          <span className={`status-pill ${item.status === 'good' ? 'pill-good' : 'pill-attention'}`}>
+                            {item.status === 'good' ? 'สภาพดี (Good)' : 'ต้องเฝ้าระวัง (Needs Attention)'}
+                          </span>
+                        </div>
+                        <p className="timeline-note">{item.note || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="timeline-empty">
+                  <p>ยังไม่มีบันทึกการติดตามผลสำหรับสัตว์ตัวนี้</p>
+                  <p style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '4px' }}>
+                    กดปุ่ม "+ บันทึกการติดตาม" ด้านบน เพื่อเริ่มบันทึกครั้งแรก
+                  </p>
+                </div>
+              )}
+            </section>
           )}
         </main>
       </div>
@@ -1280,7 +1392,12 @@ export default function App() {
         }
 
         showAlert('บันทึกผลการติดตามหลังรับเลี้ยงเรียบร้อยแล้ว!', 'success');
-        setPage('home');
+        fetchMyApplications();
+        if (currentUser?.role === 'caretaker' || currentUser?.role === 'admin') {
+          setPage('review');
+        } else {
+          setPage('home');
+        }
       } catch (err) {
         setErrorPopupMsg(err.message);
         setShowErrorPopup(true);
@@ -1301,7 +1418,23 @@ export default function App() {
               <h2>{app?.animal_name || 'สัตว์เลี้ยง'}</h2>
               <p>ใบสมัคร APP-{app?.id || '001'} · ผู้รับเลี้ยง: {app?.applicant_name || 'Adopter'}</p>
             </div>
-            {renderStatus('approved')}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setPage('review')}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  color: 'var(--text)',
+                }}
+              >
+                ← ย้อนกลับ
+              </button>
+              {renderStatus('approved')}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit}>

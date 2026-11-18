@@ -42,9 +42,12 @@ async function createFollowUp(req, res, next) {
       });
     }
 
-    // Check application exists
+    // Check application exists and verify animal has caretaker
     const appCheck = await db.query(
-      'SELECT id, animal_id, applicant_id, status FROM adoption_applications WHERE id = $1',
+      `SELECT app.id, app.animal_id, app.applicant_id, app.status, a.caretaker_id 
+       FROM adoption_applications app
+       JOIN animals a ON app.animal_id = a.id
+       WHERE app.id = $1`,
       [Number(finalAppId)]
     );
 
@@ -52,6 +55,13 @@ async function createFollowUp(req, res, next) {
       return res.status(404).json({
         success: false,
         error: { message: `Adoption application with ID ${finalAppId} not found.` },
+      });
+    }
+
+    if (!appCheck.rows[0].caretaker_id) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'สัตว์ที่โพสต์โดย Guest ไม่ต้องมีการบันทึก Follow-up' },
       });
     }
 
