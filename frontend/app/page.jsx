@@ -375,7 +375,11 @@ export default function App() {
           setShowLoginPopup(true);
         }
       } catch (err) {
-        setErrorPopupMsg(err.message);
+        if (!isRegister) {
+          setErrorPopupMsg('ล็อคอินผิดพลาด');
+        } else {
+          setErrorPopupMsg(err.message || 'เกิดข้อผิดพลาดในการทำรายการ');
+        }
         setShowErrorPopup(true);
       } finally {
         setLoading(false);

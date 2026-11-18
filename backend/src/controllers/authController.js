@@ -107,7 +107,7 @@ async function login(req, res, next) {
     if (userResult.rows.length === 0) {
       return res.status(401).json({
         success: false,
-        error: { message: 'Invalid credentials.' },
+        error: { message: 'ล็อคอินผิดพลาด' },
       });
     }
 
@@ -125,7 +125,7 @@ async function login(req, res, next) {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        error: { message: 'Invalid credentials.' },
+        error: { message: 'ล็อคอินผิดพลาด' },
       });
     }
 
