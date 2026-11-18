@@ -14,9 +14,9 @@ module.exports = {
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || '24h',
   PASSWORD_SALT: process.env.PASSWORD_ENDEC_SALT || 'saltSALT',
   CLOUDINARY: {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
-    api_key: process.env.CLOUDINARY_API_KEY || '',
-    api_secret: process.env.CLOUDINARY_API_SECRET || '',
+    cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || '').replace(/['",]/g, '').trim(),
+    api_key: (process.env.CLOUDINARY_API_KEY || '').replace(/['",]/g, '').trim(),
+    api_secret: (process.env.CLOUDINARY_API_SECRET || '').replace(/['",]/g, '').trim(),
   },
   // Google OAuth 2.0
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',

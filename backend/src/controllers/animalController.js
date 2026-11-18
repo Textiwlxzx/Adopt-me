@@ -75,12 +75,25 @@ async function createAnimal(req, res, next) {
 
     // Determine photo url:
     let finalPhotoUrl = photo_url || photoUrl || image_url || imageUrl || null;
+    let finalPhotoUrls = [];
 
-    if (req.file) {
+    // รวมรูปที่อัปโหลดทั้งหมดจาก req.files (images/image) หรือ req.file
+    const uploadedFiles = [
+      ...(req.files?.images || []),
+      ...(req.files?.image || []),
+      ...(Array.isArray(req.files) ? req.files : []),
+      ...(req.file ? [req.file] : []),
+    ];
+
+    if (uploadedFiles.length > 0) {
       if (CLOUDINARY && CLOUDINARY.cloud_name && CLOUDINARY.api_key && CLOUDINARY.api_secret) {
         try {
-          const uploadResult = await uploadToCloudinary(req.file.buffer, 'adopt-me/animals');
-          finalPhotoUrl = uploadResult.secure_url;
+          // Upload ทุกรูปขึ้น Cloudinary พร้อมกัน
+          const uploadResults = await Promise.all(
+            uploadedFiles.map((file) => uploadToCloudinary(file.buffer, 'adopt-me/animals'))
+          );
+          finalPhotoUrls = uploadResults.map((r) => r.secure_url);
+          finalPhotoUrl = finalPhotoUrls[0] || null;
         } catch (uploadErr) {
           console.error('[Cloudinary Upload Error]', uploadErr.message);
           return res.status(500).json({
@@ -89,12 +102,18 @@ async function createAnimal(req, res, next) {
           });
         }
       } else {
-        const ext = path.extname(req.file.originalname) || '.jpg';
-        const filename = `animal-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-        const filePath = path.join(uploadDir, filename);
-        fs.writeFileSync(filePath, req.file.buffer);
-        finalPhotoUrl = `http://localhost:5000/uploads/${filename}`;
+        // Fallback: บันทึกลง disk local
+        finalPhotoUrls = uploadedFiles.map((file, idx) => {
+          const ext = path.extname(file.originalname) || '.jpg';
+          const filename = `animal-${Date.now()}-${idx}-${Math.round(Math.random() * 1e9)}${ext}`;
+          const filePath = path.join(uploadDir, filename);
+          fs.writeFileSync(filePath, file.buffer);
+          return `http://localhost:5000/uploads/${filename}`;
+        });
+        finalPhotoUrl = finalPhotoUrls[0] || null;
       }
+    } else if (finalPhotoUrl) {
+      finalPhotoUrls = [finalPhotoUrl];
     }
 
     const finalLocationFound = location_found || locationFound || location || null;
@@ -122,8 +141,8 @@ async function createAnimal(req, res, next) {
     const result = await db.query(
       `INSERT INTO animals (
         caretaker_id, name, species, breed, age, gender,
-        health_condition, personality_note, photo_url, location_found, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        health_condition, personality_note, photo_url, photo_urls, location_found, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *`,
       [
         finalCaretakerId,
@@ -135,6 +154,7 @@ async function createAnimal(req, res, next) {
         finalHealthCondition ? finalHealthCondition.trim() : null,
         finalPersonalityNote ? finalPersonalityNote.trim() : null,
         finalPhotoUrl,
+        finalPhotoUrls,
         finalLocationFound ? finalLocationFound.trim() : null,
         finalStatus,
       ]

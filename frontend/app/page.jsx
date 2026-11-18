@@ -545,8 +545,8 @@ export default function App() {
     const [personality, setPersonality] = useState('');
     const [health, setHealth] = useState('');
     const [locationFound, setLocationFound] = useState('');
-    const [imageFile, setImageFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState('');
+    const [imageFiles, setImageFiles] = useState([]);   // array of File
+    const [previewUrls, setPreviewUrls] = useState([]); // array of object URL
     const [loading, setLoading] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [registeredData, setRegisteredData] = useState(null);
@@ -558,13 +558,30 @@ export default function App() {
       }
     };
 
-    // ทุกคนสามารถเข้าหน้านี้เพื่อโพสต์สัตว์ได้ (Guest / Adopter / Caretaker)
+    // เพิ่มรูปใหม่เข้า list (ไม่เกิน 5 รูป)
     const handleFileChange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        setImageFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-      }
+      const newFiles = Array.from(e.target.files);
+      if (!newFiles.length) return;
+
+      setImageFiles((prev) => {
+        const combined = [...prev, ...newFiles].slice(0, 5);
+        return combined;
+      });
+      setPreviewUrls((prev) => {
+        const newUrls = newFiles.map((f) => URL.createObjectURL(f));
+        return [...prev, ...newUrls].slice(0, 5);
+      });
+      // reset input ให้เลือกรูปเดิมซ้ำได้
+      e.target.value = '';
+    };
+
+    // ลบรูปตาม index
+    const handleRemoveImage = (idx) => {
+      setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+      setPreviewUrls((prev) => {
+        URL.revokeObjectURL(prev[idx]);
+        return prev.filter((_, i) => i !== idx);
+      });
     };
 
     const handleSubmit = async (e) => {
@@ -581,9 +598,8 @@ export default function App() {
       formData.append('health_condition', health);
       formData.append('location_found', locationFound);
 
-      if (imageFile) {
-        formData.append('image', imageFile);
-      }
+      // ส่งทุกรูปใน field ชื่อ 'images'
+      imageFiles.forEach((file) => formData.append('images', file));
 
       try {
         const headers = {};
@@ -640,17 +656,108 @@ export default function App() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <label className="upload">
-              {previewUrl ? (
-                <img src={previewUrl} alt="Preview" className="preview" />
-              ) : (
-                <>
-                  <span className="upload-icon">📷</span>
-                  <span>กดเพื่อเพิ่มรูปภาพ</span>
-                </>
+
+            {/* ───── Upload Zone ───── */}
+            <div style={{ marginBottom: '24px' }}>
+
+              {/* Grid แสดง thumbnails + ปุ่มลบ */}
+              {previewUrls.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                  justifyContent: 'center',
+                  marginBottom: '12px',
+                }}>
+                  {previewUrls.map((url, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        position: 'relative',
+                        width: '120px',
+                        height: '100px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: idx === 0 ? '2.5px solid var(--teal)' : '1.5px solid #dce5de',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <img
+                        src={url}
+                        alt={`preview-${idx}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      {/* badge "หลัก" สำหรับรูปแรก */}
+                      {idx === 0 && (
+                        <span style={{
+                          position: 'absolute',
+                          bottom: '4px',
+                          left: '4px',
+                          background: 'var(--teal)',
+                          color: '#fff',
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                        }}>
+                          หลัก
+                        </span>
+                      )}
+                      {/* ปุ่มลบ */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(idx)}
+                        style={{
+                          position: 'absolute',
+                          top: '4px',
+                          right: '4px',
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          background: 'rgba(0,0,0,0.55)',
+                          color: '#fff',
+                          fontSize: '13px',
+                          lineHeight: '22px',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          border: 'none',
+                          padding: 0,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
-              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
-            </label>
+
+              {/* ปุ่ม Add รูป — ซ่อนถ้าครบ 5 รูปแล้ว */}
+              {previewUrls.length < 5 && (
+                <label
+                  className="upload"
+                  style={{ width: 'min(632px, 100%)', margin: '0 auto', cursor: 'pointer' }}
+                >
+                  <span className="upload-icon">📷</span>
+                  <span>
+                    {previewUrls.length === 0
+                      ? 'กดเพื่อเพิ่มรูปภาพ (สูงสุด 5 รูป)'
+                      : `เพิ่มรูปอีก (${previewUrls.length}/5)`}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    onChange={handleFileChange}
+                  />
+                </label>
+              )}
+
+              {previewUrls.length > 0 && (
+                <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--muted)', marginTop: '6px' }}>
+                  รูปแรก (กรอบสีเขียว) จะใช้เป็นรูปหน้าปก · ลากรูปออกได้ด้วยปุ่ม ×
+                </p>
+              )}
+            </div>
 
             <div className="two-col form-grid">
               <label className="field">
@@ -792,6 +899,15 @@ export default function App() {
   const DetailPage = () => {
     const [pet, setPet] = useState(selectedAnimal);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [activePhoto, setActivePhoto] = useState(
+      selectedAnimal?.photo_url || (selectedAnimal?.photo_urls && selectedAnimal.photo_urls[0]) || ''
+    );
+
+    // อัปเดตรูปหลักเมื่อข้อมูลสัตว์เปลี่ยน
+    useEffect(() => {
+      const initial = pet?.photo_urls && pet.photo_urls.length > 0 ? pet.photo_urls[0] : (pet?.photo_url || '');
+      setActivePhoto(initial);
+    }, [pet?.id, pet?.photo_url, pet?.photo_urls]);
 
     // ดึงข้อมูลสัตว์ล่าสุดผ่าน Endpoint GET /api/v1/animals/:id
     useEffect(() => {
@@ -830,18 +946,85 @@ export default function App() {
 
     const isMyPet = currentUser && pet.caretaker_id === currentUser.id;
 
+    // รวบรวมรูปภาพทั้งหมด (รูปแรก = รูปหลัก, รูปที่เหลือ = รูปย่อย)
+    const allPhotos = Array.isArray(pet?.photo_urls) && pet.photo_urls.length > 0
+      ? pet.photo_urls
+      : (pet?.photo_url ? [pet.photo_url] : []);
+    const mainPhotoUrl = allPhotos[0] || pet?.photo_url || '';
+    const subPhotos = allPhotos.slice(1);
+
     return (
       <div className="page">
         <Topbar />
         <main className="detail content">
           <section className="gallery" aria-label="รูปภาพสัตว์">
-            <div className="main-photo">
-              {pet.photo_url ? (
-                <img src={pet.photo_url} alt={pet.name} />
+            <div
+              className="main-photo"
+              style={{
+                cursor: activePhoto !== mainPhotoUrl ? 'pointer' : 'default',
+              }}
+              onClick={() => {
+                if (activePhoto !== mainPhotoUrl) setActivePhoto(mainPhotoUrl);
+              }}
+              title={activePhoto !== mainPhotoUrl ? 'คลิกเพื่อกลับไปดูรูปหลัก' : ''}
+            >
+              {activePhoto ? (
+                <img src={activePhoto} alt={pet.name} />
               ) : (
                 <div style={{ color: 'var(--muted)', fontSize: '20px' }}>ไม่มีรูปภาพ</div>
               )}
             </div>
+
+            {/* แสดงแถวรูปย่อยด้านล่างตามจำนวนรูปที่ใส่ (ตามตัวอย่างรูปที่ 2) */}
+            {subPhotos.length > 0 && (
+              <div className="thumbs">
+                {subPhotos.map((photoUrl, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setActivePhoto(activePhoto === photoUrl ? mainPhotoUrl : photoUrl)}
+                    style={{
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      border: activePhoto === photoUrl ? '2.5px solid var(--teal)' : '1.5px solid #dce5de',
+                      borderRadius: '8px',
+                      position: 'relative',
+                      background: 'var(--placeholder)',
+                      height: '75px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                      boxShadow: activePhoto === photoUrl ? '0 3px 10px rgba(12,117,107,0.3)' : 'none',
+                    }}
+                    title={`คลิกเพื่อดู รูป ${idx + 2}`}
+                  >
+                    <img
+                      src={photoUrl}
+                      alt={`รูป ${idx + 2}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: '3px',
+                        right: '4px',
+                        background: 'rgba(0,0,0,0.55)',
+                        color: '#fff',
+                        fontSize: '11px',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      รูป {idx + 2}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="animal-copy">

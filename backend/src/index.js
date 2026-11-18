@@ -7,6 +7,7 @@ const animalRoutes = require('./routes/animalRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const followUpRoutes = require('./routes/followUpRoutes');
 const petUpdateRoutes = require('./routes/petUpdateRoutes');
+const path = require('path');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -15,6 +16,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Request logging
 app.use((req, res, next) => {

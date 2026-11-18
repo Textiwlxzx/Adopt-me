@@ -8,7 +8,10 @@ const upload = require('../middleware/uploadMiddleware');
 router.post(
   '/',
   optionalAuthenticate,
-  upload.single('image'),
+  upload.fields([
+    { name: 'images', maxCount: 5 },
+    { name: 'image', maxCount: 5 },
+  ]),
   animalController.createAnimal
 );
 

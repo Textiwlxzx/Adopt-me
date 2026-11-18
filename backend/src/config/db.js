@@ -120,10 +120,14 @@ async function initDb(retries = 5, delayMs = 3000) {
               health_condition TEXT,
               personality_note TEXT,
               photo_url VARCHAR(255),
+              photo_urls TEXT[] DEFAULT '{}',
               location_found VARCHAR(255),
               status animal_status NOT NULL DEFAULT 'street',
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
+
+          -- Migration: เพิ่มคอลัมน์ photo_urls ถ้ายังไม่มี
+          ALTER TABLE animals ADD COLUMN IF NOT EXISTS photo_urls TEXT[] DEFAULT '{}';
 
           -- 4. Adoption Applications Table
           CREATE TABLE IF NOT EXISTS adoption_applications (
