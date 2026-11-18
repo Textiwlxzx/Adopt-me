@@ -1,17 +1,31 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
+function GlobalStyles() {
+  return (
+    <style dangerouslySetInnerHTML={{ __html: "@font-face {\n  font-family: Itim;\n  src: url(\"https://static.figma.com/font/Itim-Regular_1\") format(\"woff2\");\n  font-weight: 400;\n  font-style: normal;\n  font-display: swap;\n}\n\n:root {\n  --green: #203d29;\n  --hero: #195330;\n  --teal: #0c756b;\n  --yellow: #ffbe00;\n  --muted: #536559;\n  --surface: #f5f8f5;\n  --placeholder: #e4ebe5;\n  --border: #dce5de;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nbody {\n  margin: 0;\n  min-width: 320px;\n  color: var(--green);\n  background: white;\n  font-family: Itim, sans-serif;\n}\n\nh1, h2, h3, p {\n  margin: 0;\n  font-weight: 400;\n}\n\nbutton, input, textarea, select {\n  font: inherit;\n}\n\nbutton {\n  border: 0;\n  padding: 0;\n  color: inherit;\n  background: transparent;\n  cursor: pointer;\n}\n\nbutton:focus-visible,\na:focus-visible {\n  outline: 2px solid var(--teal);\n  outline-offset: 4px;\n}\n\ninput, textarea, select {\n  min-width: 0;\n}\n\nimg {\n  display: block;\n  max-width: 100%;\n}\n\n.page {\n  min-height: 100vh;\n  background: #fff;\n}\n\n.topbar {\n  height: 60px;\n  padding: 0 22px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  background: var(--green);\n}\n\n.brand {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  color: var(--yellow);\n  font-size: 30px;\n  line-height: 1;\n}\n\n.brand-icon {\n  font-size: 28px;\n}\n\n.topbar nav {\n  display: flex;\n  gap: 17px;\n}\n\n.topbar nav button {\n  min-width: 78px;\n  height: 28px;\n  padding: 0 12px;\n  border-radius: 8px;\n  color: #182b1e;\n  background: var(--yellow);\n  font-size: 13px;\n  font-weight: bold;\n}\n\n.content {\n  width: min(1000px, calc(100% - 40px));\n  margin: 0 auto;\n}\n\n.standard {\n  padding-top: 40px;\n  padding-bottom: 44px;\n}\n\n.standard > h1,\n.title-with-status h1 {\n  font-size: 34px;\n}\n\n.subtitle {\n  margin-top: 2px;\n  color: var(--muted);\n  font-size: 16px;\n}\n\n.primary {\n  height: 44px;\n  border-radius: 7px;\n  color: white;\n  background: var(--teal);\n  text-align: center;\n  font-size: 17px;\n}\n\n.primary.yellow {\n  color: var(--green);\n  background: var(--yellow);\n  font-weight: bold;\n}\n\n.centered {\n  display: block;\n  width: min(300px, 100%);\n  margin: 46px auto 0;\n  font-size: 18px;\n}\n\n.status {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 70px;\n  height: 23px;\n  padding: 0 10px;\n  border-radius: 12px;\n  font-size: 12px;\n  white-space: nowrap;\n}\n\n.status.green {\n  color: #245736;\n  background: #d1ecd8;\n}\n\n.status.yellow {\n  color: #70561a;\n  background: #ffe8a3;\n}\n\n.status.red {\n  color: #8e3229;\n  background: #f7cecb;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  min-width: 0;\n  font-size: 18px;\n}\n\n.field input,\n.field textarea,\n.field select {\n  width: 100%;\n  height: 50px;\n  padding: 8px 12px;\n  border: 1.5px solid #087c70;\n  border-radius: 4px;\n  color: var(--green);\n  background: white;\n}\n\n.field textarea {\n  height: 90px;\n  resize: vertical;\n}\n\n.field input:focus,\n.field textarea:focus,\n.field select:focus {\n  outline: 2px solid #0c756b33;\n  outline-offset: 2px;\n}\n\n.field input::placeholder {\n  color: var(--muted);\n  opacity: 1;\n  font-size: 15px;\n}\n\n.two-col {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 28px 40px;\n}\n\n.wide {\n  grid-column: 1 / -1;\n}\n\n/* Auth Pages */\n.auth-page {\n  display: flex;\n  align-items: center;\n  flex-direction: column;\n  min-height: calc(100vh - 60px);\n  padding: 42px 0 50px;\n}\n\n.auth-logo-text {\n  font-size: 64px;\n}\n\n.auth-page h1 {\n  margin-top: 14px;\n  color: #000;\n  font-size: 48px;\n}\n\n.auth-fields {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 32px 64px;\n  width: min(956px, calc(100% - 40px));\n  margin-top: 36px;\n}\n\n.auth-fields.login-fields {\n  display: flex;\n  flex-direction: column;\n  gap: 28px;\n  width: min(420px, calc(100% - 40px));\n}\n\n.auth-submit {\n  width: min(300px, calc(100% - 40px));\n  margin-top: 50px;\n}\n\n.text-link {\n  margin-top: 14px;\n  color: var(--teal);\n  font-size: 17px;\n  text-decoration: underline;\n}\n\n/* Home */\n.home {\n  background: var(--surface);\n}\n\n.hero {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  height: 120px;\n  padding: 0 max(calc((100% - 1000px) / 2), 20px);\n  color: white;\n  background: var(--hero);\n}\n\n.hero h1 {\n  color: var(--yellow);\n  font-size: 34px;\n}\n\n.hero p {\n  margin-top: 8px;\n  font-size: 16px;\n}\n\n.hero button {\n  min-width: 130px;\n  width: auto;\n  padding: 0 16px;\n  height: 42px;\n  border: 1px solid white;\n  border-radius: 5px;\n  font-size: 15px;\n  cursor: pointer;\n  white-space: nowrap;\n}\n\n.home-content {\n  display: grid;\n  grid-template-columns: minmax(0, 692px) minmax(0, 282px);\n  gap: 30px;\n  width: min(1000px, calc(100% - 40px));\n  margin: 0 auto;\n  padding: 29px 0 50px;\n}\n\n.section-title,\n.mini-head {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n\n.section-title {\n  margin-bottom: 19px;\n}\n\n.section-title h2 {\n  font-size: 23px;\n}\n\n.section-title button {\n  color: #25593c;\n  font-size: 15px;\n  text-decoration: underline;\n}\n\n.pet-grid {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 37px 16px;\n}\n\n.pet-card {\n  min-height: 250px;\n  height: auto;\n  overflow: hidden;\n  border: 1px solid #e0e7e1;\n  border-radius: 10px;\n  background: white;\n  text-align: left;\n  transition: transform 0.15s ease;\n  display: flex;\n  flex-direction: column;\n}\n\n.pet-card:hover {\n  transform: translateY(-2px);\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);\n}\n\n.pet-photo-container {\n  height: 142px;\n  width: 100%;\n  flex-shrink: 0;\n  overflow: hidden;\n  background: var(--placeholder);\n}\n\n.pet-photo-container img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n\n.pet-placeholder {\n  display: grid;\n  place-items: center;\n  height: 142px;\n  color: var(--muted);\n  background: var(--placeholder);\n  font-size: 16px;\n}\n\n.pet-info {\n  display: flex;\n  align-items: flex-start;\n  flex-direction: column;\n  gap: 4px;\n  padding: 12px 13px;\n  flex: 1;\n}\n\n.pet-info strong {\n  margin-top: 1px;\n  font-size: 16px;\n  font-weight: 400;\n  width: 100%;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.pet-info > span {\n  font-size: 13px;\n  line-height: 1.4;\n  word-break: break-word;\n}\n\n.mini-apps {\n  height: 280px;\n  overflow-y: auto;\n  border: 1px solid #e0e7e1;\n  border-radius: 10px;\n  background: white;\n}\n\n.mini-head {\n  height: 46px;\n  padding: 0 15px;\n  border-bottom: 1px solid #edf0ed;\n}\n\n.mini-head h3 {\n  font-size: 16px;\n}\n\n.mini-head button {\n  color: #08766a;\n  font-size: 13px;\n}\n\n.mini-row {\n  display: grid;\n  grid-template-columns: 43px 1fr auto;\n  align-items: center;\n  gap: 11px;\n  height: 67px;\n  padding: 11px 10px 11px 15px;\n  border-bottom: 1px solid #edf0ed;\n}\n\n.mini-photo {\n  display: grid;\n  place-items: center;\n  width: 43px;\n  height: 43px;\n  border-radius: 7px;\n  color: var(--muted);\n  background: var(--placeholder);\n  font-size: 13px;\n  overflow: hidden;\n}\n\n.mini-photo img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n\n.mini-copy {\n  display: flex;\n  flex-direction: column;\n  font-size: 13px;\n}\n\n.mini-copy strong {\n  font-size: 14px;\n  font-weight: 400;\n}\n\n/* แจ้งพบสัตว์ */\n.report {\n  padding-top: 42px;\n  padding-bottom: 40px;\n}\n\n.upload {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-direction: column;\n  width: min(632px, 100%);\n  height: 160px;\n  margin: 0 auto;\n  overflow: hidden;\n  border: 1.5px dashed #617465;\n  border-radius: 16px;\n  background: #f1efed;\n  font-size: 16px;\n  cursor: pointer;\n}\n\n.upload .upload-icon {\n  font-size: 40px;\n  margin-bottom: 8px;\n}\n\n.upload .preview {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n\n.report .form-grid {\n  grid-template-columns: 230px 225px;\n  gap: 24px 125px;\n  width: 580px;\n  max-width: 100%;\n  margin: 32px auto 0;\n}\n\n.report .field {\n  font-size: 16px;\n}\n\n.submit-wide {\n  display: block;\n  width: min(436px, 100%);\n  height: 44px;\n  margin: 50px auto 0;\n}\n\n/* รายละเอียดสัตว์ */\n.detail {\n  display: grid;\n  grid-template-columns: minmax(0, 522px) minmax(0, 438px);\n  gap: 40px;\n  padding-top: 50px;\n  padding-bottom: 40px;\n}\n\n.main-photo {\n  display: grid;\n  place-items: center;\n  height: 366px;\n  overflow: hidden;\n  border-radius: 12px;\n  background: var(--placeholder);\n}\n\n.main-photo img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n\n.thumbs {\n  display: grid;\n  grid-template-columns: repeat(4, 1fr);\n  gap: 10px;\n  margin-top: 10px;\n}\n\n.thumbs div {\n  display: grid;\n  place-items: center;\n  height: 75px;\n  border-radius: 8px;\n  color: var(--muted);\n  background: var(--placeholder);\n  font-size: 14px;\n}\n\n.animal-copy h1 {\n  margin-top: 7px;\n  font-size: 26px;\n}\n\n.animal-copy > p {\n  margin-top: 14px;\n  font-size: 15px;\n  color: var(--muted);\n}\n\n.facts {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 9px;\n  margin-top: 20px;\n}\n\n.facts div,\n.caretaker {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-direction: column;\n  border: 1px solid #e0e7e1;\n  border-radius: 10px;\n  background: white;\n}\n\n.facts div {\n  height: 58px;\n}\n\n.facts span,\n.caretaker span {\n  font-size: 13px;\n  color: var(--muted);\n}\n\n.facts strong,\n.caretaker strong {\n  font-size: 15px;\n  font-weight: 400;\n}\n\n.animal-copy h3 {\n  margin-top: 18px;\n  font-size: 16px;\n}\n\n.animal-copy h3 + p {\n  margin-top: 6px;\n  font-size: 15px;\n  line-height: 1.5;\n}\n\n.caretaker {\n  align-items: flex-start;\n  height: 64px;\n  margin-top: 20px;\n  padding-left: 14px;\n}\n\n.animal-copy .primary {\n  width: 100%;\n  height: 44px;\n  margin-top: 22px;\n  font-size: 19px;\n}\n\n.animal-copy .note {\n  margin-top: 14px;\n  color: #334d3b;\n  font-size: 14px;\n  line-height: 1.4;\n}\n\n/* สมัครรับเลี้ยง */\n.narrow {\n  width: min(860px, calc(100% - 40px));\n}\n\n.animal-summary {\n  display: flex;\n  align-items: center;\n  gap: 22px;\n  height: 112px;\n  margin-top: 31px;\n  padding: 16px;\n  border-radius: 8px;\n  background: var(--surface);\n}\n\n.animal-summary img {\n  width: 142px;\n  height: 80px;\n  border-radius: 5px;\n  object-fit: cover;\n}\n\n.animal-summary h2 {\n  font-size: 22px;\n}\n\n.animal-summary p {\n  margin-top: 6px;\n  font-size: 16px;\n}\n\n.apply-form {\n  gap: 23px 40px;\n  margin-top: 29px;\n}\n\n/* ใบสมัครของฉัน */\n.application-list {\n  display: flex;\n  flex-direction: column;\n  gap: 25px;\n  margin-top: 37px;\n}\n\n.application-list article {\n  display: grid;\n  grid-template-columns: 124px 1fr 160px;\n  align-items: center;\n  gap: 26px;\n  height: 130px;\n  padding: 16px;\n  border: 1px solid var(--border);\n  border-radius: 8px;\n}\n\n.list-photo {\n  display: grid;\n  place-items: center;\n  width: 124px;\n  height: 94px;\n  border-radius: 6px;\n  color: var(--muted);\n  background: var(--placeholder);\n  font-size: 16px;\n  overflow: hidden;\n}\n\n.list-photo img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n\n.list-copy h2 {\n  font-size: 22px;\n}\n\n.list-copy p {\n  margin-top: 5px;\n  color: var(--muted);\n  font-size: 16px;\n}\n\n.list-copy button {\n  margin-top: 3px;\n  color: var(--teal);\n  font-size: 16px;\n  text-decoration: underline;\n}\n\n.application-list .status {\n  width: 160px;\n  height: 32px;\n  font-size: 16px;\n}\n\n.footer-note {\n  margin-top: 52px;\n  color: var(--muted);\n  font-size: 16px;\n}\n\n/* พิจารณาใบสมัคร */\n.title-with-status {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n\n.title-with-status > .status {\n  width: 164px;\n  height: 32px;\n  font-size: 16px;\n}\n\n.review-grid {\n  display: grid;\n  grid-template-columns: 308px 1fr;\n  gap: 40px;\n  margin-top: 32px;\n}\n\n.review-animal {\n  height: 350px;\n  padding: 18px;\n  border-radius: 8px;\n  background: var(--surface);\n}\n\n.review-animal img {\n  width: 272px;\n  height: 154px;\n  border-radius: 5px;\n  object-fit: cover;\n}\n\n.review-animal h2 {\n  margin-top: 13px;\n  font-size: 24px;\n}\n\n.review-animal p {\n  margin-top: 7px;\n  font-size: 16px;\n}\n\n.applicant {\n  height: 350px;\n  padding: 17px 21px;\n  border: 1px solid var(--border);\n  border-radius: 8px;\n}\n\n.applicant h2 {\n  font-size: 22px;\n}\n\n.applicant p {\n  margin-top: 14px;\n  font-size: 17px;\n}\n\n.applicant h3 {\n  margin-top: 24px;\n  font-size: 17px;\n}\n\n.review .review-note {\n  margin-top: 29px;\n}\n\n.review-actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: 30px;\n  margin-top: 33px;\n}\n\n.review-actions button {\n  width: 270px;\n  height: 44px;\n  font-size: 18px;\n}\n\n.reject {\n  border: 1px solid #a64b42;\n  border-radius: 7px;\n  color: #923d35;\n}\n\n/* ติดตามหลังรับเลี้ยง */\n.follow-summary {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  height: 102px;\n  margin-top: 31px;\n  padding: 18px 20px;\n  border-radius: 8px;\n  background: var(--surface);\n}\n\n.follow-summary h2 {\n  font-size: 22px;\n}\n\n.follow-summary p {\n  margin-top: 5px;\n  font-size: 17px;\n}\n\n.follow-summary .status {\n  width: 150px;\n  height: 32px;\n  font-size: 16px;\n}\n\n.followup .form-grid {\n  gap: 25px 40px;\n  margin-top: 32px;\n}\n\n.followup .centered {\n  margin-top: 43px;\n}\n\n/* Timeline ประวัติการติดตามผล (Follow-up Timeline) */\n.followup-timeline-section {\n  border-top: 1px solid var(--border);\n  padding-top: 24px;\n}\n\n.timeline-container {\n  display: flex;\n  flex-direction: column;\n  position: relative;\n  margin-top: 16px;\n}\n\n.timeline-item {\n  display: flex;\n  gap: 16px;\n  position: relative;\n}\n\n.timeline-badge-col {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  width: 24px;\n  flex-shrink: 0;\n}\n\n.timeline-dot {\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  margin-top: 6px;\n  box-shadow: 0 0 0 4px var(--surface);\n  z-index: 1;\n}\n\n.dot-good {\n  background: #10b981;\n}\n\n.dot-attention {\n  background: #f59e0b;\n}\n\n.timeline-line {\n  width: 2px;\n  background: var(--border);\n  flex-grow: 1;\n  margin-top: 4px;\n  margin-bottom: -6px;\n}\n\n.timeline-card {\n  flex: 1;\n  background: var(--surface);\n  border: 1px solid var(--border);\n  border-radius: 10px;\n  padding: 16px 20px;\n  margin-bottom: 20px;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);\n}\n\n.timeline-card-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  gap: 12px;\n  margin-bottom: 10px;\n}\n\n.timeline-date {\n  font-weight: 600;\n  font-size: 16px;\n  color: var(--text);\n  display: block;\n}\n\n.timeline-author {\n  font-size: 13px;\n  color: var(--muted);\n  margin-top: 2px;\n  display: block;\n}\n\n.timeline-note {\n  font-size: 15px;\n  color: var(--text);\n  line-height: 1.6;\n  white-space: pre-wrap;\n  background: #f8fafc;\n  padding: 10px 14px;\n  border-radius: 6px;\n  border-left: 3px solid #cbd5e1;\n}\n\n.status-pill {\n  display: inline-block;\n  padding: 4px 10px;\n  border-radius: 20px;\n  font-size: 13px;\n  font-weight: 500;\n  white-space: nowrap;\n}\n\n.pill-good {\n  background: #ecfdf5;\n  color: #065f46;\n  border: 1px solid #a7f3d0;\n}\n\n.pill-attention {\n  background: #fffbeb;\n  color: #92400e;\n  border: 1px solid #fde68a;\n}\n\n.timeline-empty {\n  text-align: center;\n  padding: 32px 20px;\n  background: var(--surface);\n  border: 1px dashed var(--border);\n  border-radius: 10px;\n  color: var(--text);\n}\n\n/* Alert Notification */\n.alert {\n  padding: 12px 16px;\n  margin: 15px 0;\n  border-radius: 6px;\n  font-size: 15px;\n}\n.alert-error {\n  background: #fde8e8;\n  color: #9b1c1c;\n  border: 1px solid #f8b4b4;\n}\n.alert-success {\n  background: #def7ec;\n  color: #03543f;\n  border: 1px solid #84e1bc;\n}\n\n@media (max-width: 850px) {\n  .topbar {\n    padding: 0 14px;\n  }\n  .brand {\n    gap: 8px;\n    font-size: 25px;\n  }\n  .topbar nav {\n    gap: 7px;\n  }\n  .topbar nav button {\n    min-width: 0;\n    padding: 0 9px;\n  }\n  .hero {\n    padding: 18px 20px;\n  }\n  .hero h1 {\n    font-size: 28px;\n  }\n  .home-content {\n    grid-template-columns: 1fr;\n  }\n  .pet-grid {\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n  }\n  .auth-fields,\n  .two-col,\n  .detail,\n  .review-grid {\n    grid-template-columns: 1fr;\n  }\n  .report .form-grid {\n    grid-template-columns: 1fr;\n    gap: 20px;\n    width: 100%;\n  }\n  .application-list article {\n    grid-template-columns: 90px 1fr;\n    height: auto;\n  }\n  .review-actions {\n    flex-direction: column;\n  }\n  .review-actions button {\n    width: 100%;\n  }\n}\n\n@media (max-width: 520px) {\n  .pet-grid {\n    grid-template-columns: 1fr;\n  }\n  .auth-page h1 {\n    font-size: 38px;\n  }\n  .application-list article {\n    grid-template-columns: 1fr;\n  }\n  .title-with-status {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n}\n/* Core styles */\r\n.counter {\r\n  font-size: 16px;\r\n  padding: 5px 10px;\r\n  border-radius: 5px;\r\n  color: var(--accent);\r\n  background: var(--accent-bg);\r\n  border: 2px solid transparent;\r\n  transition: border-color 0.3s;\r\n  margin-bottom: 24px;\r\n}\r\n.counter:hover { border-color: var(--accent-border); }\r\n.counter:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }\r\n\r\n/* Logo sizes */\r\n.auth-logo {\r\n  width: 80px;\r\n  margin-bottom: 0.5rem;\r\n}\r\n.navbar-logo {\r\n  height: 20px;\r\n  vertical-align: middle;\r\n}\r\n\r\n/* Popup */\r\n.popup-overlay {\r\n  position: fixed;\r\n  top: 0;\r\n  left: 0;\r\n  width: 100vw;\r\n  height: 100vh;\r\n  background: rgba(0,0,0,0.5);\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  z-index: 1000;\r\n  cursor: pointer;\r\n}\r\n.popup {\r\n  background: #fff;\r\n  padding: 2rem 2.5rem 2rem;\r\n  border-radius: 16px;\r\n  box-shadow: 0 8px 32px rgba(0,0,0,0.25);\r\n  position: relative;\r\n  text-align: center;\r\n  cursor: default;\r\n  max-width: 380px;\r\n  width: 90%;\r\n}\r\n.popup-cat-img {\r\n  width: 200px;\r\n  height: auto;\r\n  display: block;\r\n  margin: 0 auto 1rem;\r\n}\r\n.popup-text {\r\n  color: #2a9d4e;\r\n  font-size: 1.3rem;\r\n  font-weight: 700;\r\n  margin: 0;\r\n}\r\n.close-btn {\r\n  position: absolute;\r\n  top: 0.75rem;\r\n  right: 0.75rem;\r\n  background: transparent;\r\n  border: none;\r\n  font-size: 1.4rem;\r\n  cursor: pointer;\r\n  color: #333;\r\n  line-height: 1;\r\n}\r\n.close-btn:hover {\r\n  color: #000;\r\n}\r\n\r\n/* Pet Updates Feed & Cards */\r\n.update-card {\r\n  background: #ffffff;\r\n  border: 1px solid var(--border);\r\n  border-radius: 12px;\r\n  padding: 20px;\r\n  margin-bottom: 24px;\r\n  box-shadow: 0 2px 8px rgba(0,0,0,0.04);\r\n}\r\n.update-media {\r\n  width: 100%;\r\n  max-height: 420px;\r\n  object-fit: contain;\r\n  background: #111;\r\n  border-radius: 8px;\r\n  margin: 14px 0;\r\n  display: block;\r\n}\r\n.feedback-box {\r\n  background: #f0fdf4;\r\n  border: 1.5px solid #86efac;\r\n  border-radius: 8px;\r\n  padding: 14px 16px;\r\n  margin-top: 14px;\r\n}\r\n.feedback-form {\r\n  background: #f8fafc;\r\n  border: 1.5px dashed #cbd5e1;\r\n  border-radius: 8px;\r\n  padding: 16px;\r\n  margin-top: 14px;\r\n}\r\n" }} />
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState('home');
-  const [currentUser, setCurrentUser] = useState(() => {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [token, setToken] = useState('');
+
+  // Hydrate user and token on client mount (safe for Next.js SSR)
+  useEffect(() => {
     try {
-      return JSON.parse(localStorage.getItem('user')) || null;
-    } catch {
-      return null;
+      const savedUser = localStorage.getItem('user');
+      const savedToken = localStorage.getItem('token');
+      if (savedUser) setCurrentUser(JSON.parse(savedUser));
+      if (savedToken) setToken(savedToken);
+    } catch (e) {
+      console.error('Error hydrating localStorage:', e);
     }
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  }, []);
 
   // Global state
   const [animals, setAnimals] = useState([]);
@@ -131,7 +145,7 @@ export default function App() {
   const Topbar = ({ auth = false }) => (
     <header className="topbar">
       <button type="button" className="brand" onClick={() => setPage('home')}>
-        
+
         <span>Adopt Me</span>
       </button>
 
@@ -370,7 +384,7 @@ export default function App() {
 
     return (
       <div className="page">
-                <Topbar auth={true} />
+        <Topbar auth={true} />
         <form className="auth-page" onSubmit={handleSubmit}>
           <img src="/logo.png" alt="AdoptMe" className="auth-logo" />
           <h1>{isRegister ? 'Register' : 'Login'}</h1>
@@ -1052,22 +1066,44 @@ export default function App() {
                       ใบสมัคร #{app.id} · ส่งเมื่อ{' '}
                       {new Date(app.submitted_at).toLocaleDateString('th-TH')}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedAnimal({
-                          id: app.animal_id,
-                          name: app.animal_name,
-                          photo_url: app.animal_photo_url,
-                          species: app.animal_species,
-                          breed: app.animal_breed,
-                          status: app.animal_status,
-                        });
-                        setPage('detail');
-                      }}
-                    >
-                      ดูรายละเอียดสัตว์
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAnimal({
+                            id: app.animal_id,
+                            name: app.animal_name,
+                            photo_url: app.animal_photo_url,
+                            species: app.animal_species,
+                            breed: app.animal_breed,
+                            status: app.animal_status,
+                          });
+                          setPage('detail');
+                        }}
+                      >
+                        ดูรายละเอียดสัตว์
+                      </button>
+
+                      {app.status === 'approved' && (
+                        <button
+                          type="button"
+                          style={{
+                            background: 'var(--teal)',
+                            color: 'white',
+                            padding: '4px 10px',
+                            borderRadius: '5px',
+                            fontSize: '14px',
+                            textDecoration: 'none',
+                          }}
+                          onClick={() => {
+                            setSelectedApp(app);
+                            setPage('pet-updates');
+                          }}
+                        >
+                          📸 อัปเดตน้อง / ดูคำแนะนำ Caretaker
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {renderStatus(app.status)}
                 </article>
@@ -1093,8 +1129,8 @@ export default function App() {
     const incomingApps = currentUser?.role === 'admin'
       ? myApplications
       : myApplications.filter(
-          (app) => app.caretaker_id === currentUser?.id && app.applicant_id !== currentUser?.id
-        );
+        (app) => app.caretaker_id === currentUser?.id && app.applicant_id !== currentUser?.id
+      );
 
     const [selectedReviewApp, setSelectedReviewApp] = useState(
       incomingApps.find((a) => a.id === selectedApp?.id) || incomingApps[0] || null
@@ -1248,6 +1284,17 @@ export default function App() {
 
           {selectedReviewApp.status === 'approved' && selectedReviewApp.caretaker_id ? (
             <div className="review-actions">
+              <button
+                type="button"
+                className="primary"
+                style={{ background: 'var(--teal)', color: 'white' }}
+                onClick={() => {
+                  setSelectedApp(selectedReviewApp);
+                  setPage('pet-updates');
+                }}
+              >
+                📸 ดูอัปเดตจากผู้รับเลี้ยง & ให้คำแนะนำ
+              </button>
               <button
                 type="button"
                 className="primary yellow"
@@ -1477,6 +1524,383 @@ export default function App() {
     );
   };
 
+  /* ================= 10. หน้าอัปเดตน้องจากบ้านใหม่ & ข้อเสนอแนะ Caretaker (PET UPDATES PAGE) ================= */
+  const PetUpdatesPage = () => {
+    const app = selectedApp;
+    const [updates, setUpdates] = useState([]);
+    const [loadingList, setLoadingList] = useState(false);
+
+    // ฟอร์มส่งอัปเดตของ Adopter
+    const [caption, setCaption] = useState('');
+    const [mediaFile, setMediaFile] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+    const [mediaType, setMediaType] = useState('image');
+    const [submitting, setSubmitting] = useState(false);
+
+    // State สำหรับข้อความ feedback แต่ละรายการของ Caretaker
+    const [feedbackInputs, setFeedbackInputs] = useState({});
+    const [sendingFeedbackId, setSendingFeedbackId] = useState(null);
+
+    const isAdopter = currentUser?.id === app?.applicant_id;
+    const isCaretaker = currentUser?.role === 'admin' || (currentUser?.role === 'caretaker' && (currentUser?.id === app?.caretaker_id || !app?.caretaker_id));
+
+    const fetchUpdates = async () => {
+      if (!app?.id || !token) return;
+      setLoadingList(true);
+      try {
+        const res = await fetch(`${API_BASE}/pet-updates?application_id=${app.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setUpdates(data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching pet updates:', err);
+      } finally {
+        setLoadingList(false);
+      }
+    };
+
+    useEffect(() => {
+      fetchUpdates();
+    }, [app?.id]);
+
+    const handleFileChange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        setMediaFile(file);
+        const type = file.type.startsWith('video/') ? 'video' : 'image';
+        setMediaType(type);
+        setMediaPreview(URL.createObjectURL(file));
+      }
+    };
+
+    const handlePostUpdate = async (e) => {
+      e.preventDefault();
+      if (!mediaFile) {
+        showAlert('กรุณาเลือกรูปภาพหรือวิดีโอน้องเพื่ออัปเดต', 'error');
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const formData = new FormData();
+        formData.append('application_id', app.id);
+        formData.append('caption', caption);
+        formData.append('media', mediaFile);
+        formData.append('media_type', mediaType);
+
+        const res = await fetch(`${API_BASE}/pet-updates`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error?.message || 'ส่งอัปเดตไม่สำเร็จ');
+        }
+
+        showAlert('อัปเดตรูป/วิดีโอน้องจากบ้านใหม่ส่งถึงผู้ดูแลเรียบร้อยแล้ว!', 'success');
+        setCaption('');
+        setMediaFile(null);
+        setMediaPreview(null);
+        fetchUpdates();
+      } catch (err) {
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    const handleSendFeedback = async (updateId) => {
+      const fbText = feedbackInputs[updateId];
+      if (!fbText || !fbText.trim()) {
+        showAlert('กรุณากรอกข้อความคำแนะนำ / Feedback ก่อนส่ง', 'error');
+        return;
+      }
+
+      setSendingFeedbackId(updateId);
+      try {
+        const res = await fetch(`${API_BASE}/pet-updates/${updateId}/feedback`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ feedback: fbText }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error?.message || 'บันทึกคำแนะนำไม่สำเร็จ');
+        }
+
+        showAlert('ส่งคำแนะนำและ Feedback เรียบร้อยแล้ว', 'success');
+        setFeedbackInputs((prev) => ({ ...prev, [updateId]: '' }));
+        fetchUpdates();
+      } catch (err) {
+        setErrorPopupMsg(err.message);
+        setShowErrorPopup(true);
+      } finally {
+        setSendingFeedbackId(null);
+      }
+    };
+
+    return (
+      <div className="page">
+        <Topbar />
+        <main className="content standard narrow">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <h1>อัปเดตน้องจากบ้านใหม่ & คำแนะนำการเลี้ยงดู</h1>
+              <p className="subtitle">
+                {app?.animal_name} · ใบสมัคร APP-{app?.id} · ผู้รับเลี้ยง: {app?.applicant_name || currentUser?.name}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (currentUser?.role === 'caretaker' || currentUser?.role === 'admin') {
+                  setPage('review');
+                } else {
+                  setPage('applications');
+                }
+              }}
+              style={{
+                background: 'none',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                cursor: 'pointer',
+                color: 'var(--text)',
+                fontWeight: 500,
+              }}
+            >
+              ← ย้อนกลับ
+            </button>
+          </div>
+
+          {alert && (
+            <div className={`alert ${alert.type === 'error' ? 'alert-error' : 'alert-success'}`}>
+              {alert.msg}
+            </div>
+          )}
+
+          {/* ส่วนของผู้รับเลี้ยง (Adopter) อัปเดตรูปถ่าย / วิดีโอ */}
+          {isAdopter && (
+            <section
+              style={{
+                background: 'var(--surface)',
+                border: '1.5px solid var(--border)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '32px',
+              }}
+            >
+              <h2 style={{ fontSize: '20px', marginBottom: '8px' }}>
+                📸 ส่งรูปถ่าย / วิดีโอน้องจากบ้านใหม่ให้ผู้ดูแล (Caretaker)
+              </h2>
+              <p style={{ color: 'var(--muted)', fontSize: '15px', marginBottom: '20px' }}>
+                ร่วมแบ่งปันความสดใสและพัฒนาการของน้อง เพื่อรับคำแนะนำการดูแลจาก Caretaker
+              </p>
+
+              <form onSubmit={handlePostUpdate}>
+                <label className="upload" style={{ height: mediaPreview ? 'auto' : '150px', padding: mediaPreview ? '12px' : 0 }}>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  {mediaPreview ? (
+                    mediaType === 'video' ? (
+                      <video src={mediaPreview} controls style={{ maxHeight: '280px', maxWidth: '100%', borderRadius: '8px' }} />
+                    ) : (
+                      <img src={mediaPreview} alt="Preview" style={{ maxHeight: '280px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+                    )
+                  ) : (
+                    <>
+                      <span className="upload-icon">📷 / 🎥</span>
+                      <span>คลิกเพื่อแนบรูปถ่าย หรือคลิปวิดีโอน้อง</span>
+                    </>
+                  )}
+                </label>
+
+                <div className="field wide" style={{ marginTop: '16px' }}>
+                  <span>ข้อความบอกเล่าชีวิตประจำวัน / อาการ / พฤติกรรมของน้อง</span>
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    placeholder="เช่น วันนี้น้องกินเก่งมาก วิ่งเล่นร่าเริง ปรับตัวกับที่นอนใหม่ได้ดีมากครับ..."
+                    style={{ height: '80px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <button
+                    type="submit"
+                    className="primary"
+                    disabled={submitting}
+                    style={{
+                      background: 'var(--teal)',
+                      color: 'white',
+                      padding: '10px 24px',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {submitting ? 'กำลังส่งข้อมูล...' : '🚀 ส่งอัปเดตให้น้อง'}
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
+
+          {/* รายการอัปเดตและ Feedback ทั้งหมด */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '22px' }}>บันทึกอัปเดตชีวิตน้องจากบ้านใหม่</h2>
+              <button
+                type="button"
+                onClick={fetchUpdates}
+                style={{ color: 'var(--teal)', textDecoration: 'underline', fontSize: '15px' }}
+              >
+                รีเฟรชอัปเดต
+              </button>
+            </div>
+
+            {loadingList ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                กำลังโหลดข้อมูลอัปเดต...
+              </div>
+            ) : updates.length > 0 ? (
+              <div>
+                {updates.map((item) => (
+                  <article key={item.id} className="update-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong style={{ fontSize: '17px' }}>{item.adopter_name || 'ผู้รับเลี้ยง'}</strong>
+                        <span style={{ fontSize: '13px', color: 'var(--muted)', marginLeft: '8px' }}>
+                          {new Date(item.created_at).toLocaleDateString('th-TH', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <span className="status-pill pill-good">
+                        {item.media_type === 'video' ? '🎥 วิดีโอ' : '📷 รูปถ่าย'}
+                      </span>
+                    </div>
+
+                    {item.caption && (
+                      <p style={{ marginTop: '12px', fontSize: '16px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                        {item.caption}
+                      </p>
+                    )}
+
+                    {item.media_url && (
+                      item.media_type === 'video' || item.media_url.endsWith('.mp4') || item.media_url.endsWith('.webm') ? (
+                        <video src={item.media_url} controls className="update-media" />
+                      ) : (
+                        <img src={item.media_url} alt="น้องจากบ้านใหม่" className="update-media" />
+                      )
+                    )}
+
+                    {/* กล่อง Feedback ที่ Caretaker ตอบแล้ว */}
+                    {item.feedback ? (
+                      <div className="feedback-box">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <strong style={{ color: '#166534', fontSize: '15px' }}>
+                            💬 คำแนะนำการเลี้ยงดูจากผู้ดูแล ({item.feedback_by_name || 'Caretaker'}):
+                          </strong>
+                          {item.feedback_at && (
+                            <span style={{ fontSize: '12px', color: '#166534' }}>
+                              {new Date(item.feedback_at).toLocaleDateString('th-TH', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ color: '#14532d', fontSize: '15px', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' }}>
+                          {item.feedback}
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '10px', fontSize: '14px', color: 'var(--muted)', fontStyle: 'italic' }}>
+                        ⏳ ยังไม่มีคำแนะนำจาก Caretaker สำหรับอัปเดตนี้
+                      </div>
+                    )}
+
+                    {/* ฟอร์มสำหรับ Caretaker ในการตอบ Feedback หรือแก้ไขคำแนะนำ */}
+                    {isCaretaker && (
+                      <div className="feedback-form">
+                        <label style={{ display: 'block', fontWeight: 600, fontSize: '14px', marginBottom: '6px' }}>
+                          {item.feedback ? '✏️ อัปเดต/แก้ไขคำแนะนำในการเลี้ยงดู:' : '💬 พิมพ์ Feedback / คำแนะนำในการเลี้ยงดูให้น้อง:'}
+                        </label>
+                        <textarea
+                          placeholder="พิมพ์คำแนะนำ เช่น ปริมาณอาหาร การฉีดวัคซีน การปรับพฤติกรรม หรือข้อเสนอแนะในการดูแล..."
+                          value={feedbackInputs[item.id] !== undefined ? feedbackInputs[item.id] : (item.feedback || '')}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFeedbackInputs((prev) => ({ ...prev, [item.id]: val }));
+                          }}
+                          style={{
+                            width: '100%',
+                            minHeight: '75px',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #94a3b8',
+                            fontSize: '15px',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                          <button
+                            type="button"
+                            className="primary yellow"
+                            style={{
+                              padding: '6px 16px',
+                              height: '36px',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                            }}
+                            disabled={sendingFeedbackId === item.id}
+                            onClick={() => handleSendFeedback(item.id)}
+                          >
+                            {sendingFeedbackId === item.id ? 'กำลังส่งคำแนะนำ...' : 'ส่งคำแนะนำให้ผู้รับเลี้ยง'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: '10px' }}>
+                <p style={{ fontSize: '18px', color: 'var(--text)' }}>ยังไม่มีการส่งอัปเดตรูปถ่ายหรือวิดีโอ</p>
+                <p style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '4px' }}>
+                  {isAdopter ? 'ส่งรูปภาพหรือวิดีโอแรกของน้องด้านบนเพื่อเริ่มบันทึก!' : 'เมื่อผู้รับเลี้ยงส่งรูปถ่าย/วิดีโอน้องเข้ามา จะแสดงขึ้นที่นี่'}
+                </p>
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
+    );
+  };
+
   // Router View
   const renderPage = () => {
     switch (page) {
@@ -1498,6 +1922,8 @@ export default function App() {
         return <ReviewPage />;
       case 'followup':
         return <FollowupPage />;
+      case 'pet-updates':
+        return <PetUpdatesPage />;
       case 'home':
       default:
         return <HomePage />;
@@ -1506,6 +1932,7 @@ export default function App() {
 
   return (
     <div style={{ position: 'relative' }}>
+      <GlobalStyles />
       {renderPage()}
       {showRegisterPopup && (
         <div

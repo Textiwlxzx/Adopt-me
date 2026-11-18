@@ -132,6 +132,20 @@ async function initDb(retries = 5, delayMs = 3000) {
               status follow_up_status NOT NULL DEFAULT 'good',
               created_by INT REFERENCES users(id) ON DELETE SET NULL
           );
+
+          -- 6. Adopter Pet Updates (รูปถ่าย / วิดีโอน้องจากบ้านใหม่ พร้อมฟีดแบ็กจาก Caretaker)
+          CREATE TABLE IF NOT EXISTS pet_updates (
+              id SERIAL PRIMARY KEY,
+              application_id INT NOT NULL REFERENCES adoption_applications(id) ON DELETE CASCADE,
+              adopter_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+              media_url TEXT NOT NULL,
+              media_type VARCHAR(20) DEFAULT 'image', -- 'image' or 'video'
+              caption TEXT,
+              feedback TEXT,
+              feedback_by INT REFERENCES users(id) ON DELETE SET NULL,
+              feedback_at TIMESTAMP,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
         `);
 
         // Auto-seed default accounts if users table is empty

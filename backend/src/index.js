@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const animalRoutes = require('./routes/animalRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const followUpRoutes = require('./routes/followUpRoutes');
+const petUpdateRoutes = require('./routes/petUpdateRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/animals', animalRoutes);
 app.use('/api/v1/adoption-applications', applicationRoutes);
 app.use('/api/v1/follow-ups', followUpRoutes);
+app.use('/api/v1/pet-updates', petUpdateRoutes);
 
 // 404 & Centralized Error Handling
 app.use(notFoundHandler);
