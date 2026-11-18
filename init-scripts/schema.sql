@@ -44,14 +44,24 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100),
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255),          -- NULL สำหรับ Google OAuth users
     phone VARCHAR(20),
     role user_role NOT NULL DEFAULT 'adopter',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     address VARCHAR(255)
 );
 
--- 3. Animals Table
+-- 3. OAuth Users (เชื่อม Google / provider อื่นๆ กับ users ในระบบ)
+CREATE TABLE IF NOT EXISTS oauthusers (
+    id SERIAL PRIMARY KEY,
+    userid INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (provider, provider_user_id)
+);
+
+-- 4. Animals Table
 CREATE TABLE IF NOT EXISTS animals (
     id SERIAL PRIMARY KEY,
     caretaker_id INT REFERENCES users(id) ON DELETE SET NULL,
@@ -68,7 +78,7 @@ CREATE TABLE IF NOT EXISTS animals (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Adoption Applications Table
+-- 5. Adoption Applications Table
 CREATE TABLE IF NOT EXISTS adoption_applications (
     id SERIAL PRIMARY KEY,
     animal_id INT NOT NULL REFERENCES animals(id) ON DELETE CASCADE,
@@ -79,7 +89,7 @@ CREATE TABLE IF NOT EXISTS adoption_applications (
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Follow-ups Table
+-- 6. Follow-ups Table
 CREATE TABLE IF NOT EXISTS follow_ups (
     id SERIAL PRIMARY KEY,
     application_id INT NOT NULL REFERENCES adoption_applications(id) ON DELETE CASCADE,

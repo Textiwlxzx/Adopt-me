@@ -88,12 +88,25 @@ async function initDb(retries = 5, delayMs = 3000) {
               id SERIAL PRIMARY KEY,
               name VARCHAR(100),
               email VARCHAR(100) UNIQUE NOT NULL,
-              password VARCHAR(255) NOT NULL,
+              password VARCHAR(255),          -- NULL สำหรับ Google OAuth users
               phone VARCHAR(20),
               role user_role NOT NULL DEFAULT 'adopter',
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               address VARCHAR(255)
           );
+
+          -- Migration: ถ้า password column ยังเป็น NOT NULL ให้ DROP constraint
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'users'
+                AND column_name = 'password'
+                AND is_nullable = 'NO'
+            ) THEN
+              ALTER TABLE users ALTER COLUMN password DROP NOT NULL;
+            END IF;
+          END $$;
 
           -- 3. Animals Table
           CREATE TABLE IF NOT EXISTS animals (
@@ -146,7 +159,16 @@ async function initDb(retries = 5, delayMs = 3000) {
               feedback_at TIMESTAMP,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
-        `);
+
+          -- 7. OAuth Users (เชื่อม Google / provider อื่นๆ กับ users ในระบบ)
+          CREATE TABLE IF NOT EXISTS oauthusers (
+              id SERIAL PRIMARY KEY,
+              userid INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+              provider VARCHAR(50) NOT NULL,
+              provider_user_id VARCHAR(255) NOT NULL,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE (provider, provider_user_id)
+          );        `);
 
         // Auto-seed default accounts if users table is empty
         const userCountRes = await client.query('SELECT COUNT(*) FROM users');

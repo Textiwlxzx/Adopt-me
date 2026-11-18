@@ -14,8 +14,13 @@ module.exports = {
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || '24h',
   PASSWORD_SALT: process.env.PASSWORD_ENDEC_SALT || 'saltSALT',
   CLOUDINARY: {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'qlqboj8f',
-    api_key: process.env.CLOUDINARY_API_KEY || '241973542599985',
-    api_secret: process.env.CLOUDINARY_API_SECRET || '1yZF5hG-S67k0LxDU2SoQ3qY77g',
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
+    api_key: process.env.CLOUDINARY_API_KEY || '',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '',
   },
+  // Google OAuth 2.0
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
+  OAUTH_REDIRECT_URI: process.env.OAUTH_REDIRECT_URI || 'http://localhost:5000/api/v1/auth/google/callback',
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 };

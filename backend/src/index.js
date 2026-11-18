@@ -37,6 +37,8 @@ app.get('/', (req, res) => {
       auth: {
         register: 'POST /api/v1/auth/register',
         login: 'POST /api/v1/auth/login',
+        googleLogin: 'GET /api/v1/auth/google',
+        googleCallback: 'GET /api/v1/auth/google/callback',
       },
       animals: {
         list: 'GET /api/v1/animals',
@@ -89,6 +91,8 @@ if (require.main === module) {
       console.log(`Routes:`);
       console.log(`  POST  /api/v1/auth/register`);
       console.log(`  POST  /api/v1/auth/login`);
+      console.log(`  GET   /api/v1/auth/google`);
+      console.log(`  GET   /api/v1/auth/google/callback`);
       console.log(`  POST  /api/v1/animals`);
       console.log(`  GET   /api/v1/animals`);
       console.log(`  GET   /api/v1/animals/:id`);
