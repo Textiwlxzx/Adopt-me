@@ -56,6 +56,13 @@ async function createPetUpdate(req, res, next) {
       });
     }
 
+    if (!appData.caretaker_id) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'สัตว์ที่รับมาจากบุคคลภายนอก (Guest) ไม่มีผู้ดูแล ไม่จำเป็นต้องส่งอัปเดตสัตว์เลี้ยง' },
+      });
+    }
+
     let finalMediaUrl = media_url ? media_url.trim() : '';
     let finalMediaType = media_type || 'image';
 

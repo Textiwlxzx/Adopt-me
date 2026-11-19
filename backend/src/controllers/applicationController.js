@@ -58,6 +58,13 @@ async function submitApplication(req, res, next) {
 
     if (isGuestAnimal) {
       await db.query(`UPDATE animals SET status = 'adopted' WHERE id = $1`, [Number(finalAnimalId)]);
+      // ปฏิเสธใบสมัครอื่นของสัตว์ตัวนี้ (ถ้ามี)
+      await db.query(
+        `UPDATE adoption_applications 
+         SET status = 'rejected' 
+         WHERE animal_id = $1 AND id != $2 AND status IN ('submitted', 'reviewing')`,
+        [Number(finalAnimalId), result.rows[0].id]
+      );
     }
 
     return res.status(201).json({
@@ -223,9 +230,18 @@ async function updateApplicationStatus(req, res, next) {
     );
 
     if (normalizedStatus === 'approved') {
+      // 1. ปรับสถานะสัตว์เป็น 'adopted'
       await db.query(
         `UPDATE animals SET status = 'adopted' WHERE id = $1`,
         [application.animal_id]
+      );
+
+      // 2. ปฏิเสธ (reject) ใบสมัครคนอื่นๆ ทั้งหมดของสัตว์ตัวนี้ที่ยังค้างอยู่
+      await db.query(
+        `UPDATE adoption_applications 
+         SET status = 'rejected' 
+         WHERE animal_id = $1 AND id != $2 AND status IN ('submitted', 'reviewing')`,
+        [application.animal_id, Number(id)]
       );
     }
 

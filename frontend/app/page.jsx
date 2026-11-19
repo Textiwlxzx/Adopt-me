@@ -48,6 +48,16 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setToken('');
+    setMyApplications([]);
+    setMyAnimals([]);
+    setSelectedAnimal(null);
+    setSelectedApp(null);
+    setAlert(null);
+    setShowRegisterPopup(false);
+    setShowLoginPopup(false);
+    setShowErrorPopup(false);
+    setErrorPopupMsg('');
+    setShowAdoptPopup(false);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setPage('login');
@@ -1070,9 +1080,41 @@ export default function App() {
               <button
                 type="button"
                 className="primary yellow"
-                onClick={() => {
-                  fetchMyApplications();
-                  setPage('review');
+                onClick={async () => {
+                  try {
+                    let currentApps = myApplications;
+                    if (token) {
+                      const res = await fetch(`${API_BASE}/adoption-applications/me`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      const data = await res.json();
+                      if (data.success && data.data) {
+                        currentApps = data.data;
+                        setMyApplications(data.data);
+                      }
+                    }
+
+                    // กรองใบสมัครที่เป็นของสัตว์ตัวนี้ และส่งเข้ามาหาเรา (ไม่ใช่เราสมัครเอง)
+                    const petApps = currentApps.filter((a) => {
+                      const matchesAnimal = a.animal_id === pet.id;
+                      const isIncoming = currentUser?.role === 'admin' 
+                        ? true 
+                        : (a.caretaker_id === currentUser?.id && a.applicant_id !== currentUser?.id);
+                      return matchesAnimal && isIncoming;
+                    });
+
+                    if (petApps.length === 0) {
+                      setErrorPopupMsg(`ยังไม่มีใบสมัครส่งเข้ามาสำหรับ "${pet.name}"`);
+                      setShowErrorPopup(true);
+                      return;
+                    }
+
+                    setSelectedApp(petApps[0]);
+                    setPage('review');
+                  } catch (err) {
+                    setErrorPopupMsg(err.message || 'เกิดข้อผิดพลาดในการโหลดใบสมัคร');
+                    setShowErrorPopup(true);
+                  }
                 }}
               >
                 ดูใบสมัครรับเลี้ยงของสัตว์ตัวนี้
@@ -1322,7 +1364,7 @@ export default function App() {
                         ดูรายละเอียดสัตว์
                       </button>
 
-                      {app.status === 'approved' && (
+                      {app.status === 'approved' && app.caretaker_id && (
                         <button
                           type="button"
                           style={{
@@ -1364,11 +1406,19 @@ export default function App() {
     // ใบสมัครที่เข้ามาให้เราพิจารณา:
     // สำหรับ Caretaker: สัตว์ตัวนั้นต้องมีเราเป็น caretaker (caretaker_id === currentUser.id)
     // และผู้สมัครต้องไม่ใช่ตัวเราเอง (applicant_id !== currentUser.id)
-    const incomingApps = currentUser?.role === 'admin'
+    let incomingApps = currentUser?.role === 'admin'
       ? myApplications
       : myApplications.filter(
         (app) => app.caretaker_id === currentUser?.id && app.applicant_id !== currentUser?.id
       );
+
+    // ถ้ากดเข้ามาเจาะจงที่สัตว์ตัวใดตัวหนึ่ง (ผ่าน selectedApp.animal_id) ให้แสดงเฉพาะใบสมัครของสัตว์ตัวนั้น
+    if (selectedApp?.animal_id) {
+      const animalSpecificApps = incomingApps.filter((a) => a.animal_id === selectedApp.animal_id);
+      if (animalSpecificApps.length > 0) {
+        incomingApps = animalSpecificApps;
+      }
+    }
 
     const [selectedReviewApp, setSelectedReviewApp] = useState(
       incomingApps.find((a) => a.id === selectedApp?.id) || incomingApps[0] || null
@@ -1426,12 +1476,9 @@ export default function App() {
           'success'
         );
         fetchMyApplications();
-        if (newStatus === 'approved') {
-          setSelectedApp(selectedReviewApp);
-          setPage('followup');
-        } else {
-          setPage('home');
-        }
+        fetchAnimals();
+        // อัปเดตข้อมูลของใบสมัครที่กำลังดูอยู่ให้เป็นสถานะใหม่ทันที เพื่อให้อยู่หน้าเดิมพร้อมปุ่มตัวเลือก
+        setSelectedReviewApp((prev) => (prev ? { ...prev, status: newStatus } : null));
       } catch (err) {
         setErrorPopupMsg(err.message);
         setShowErrorPopup(true);
